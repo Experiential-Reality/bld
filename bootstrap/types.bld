@@ -1,0 +1,119 @@
+# Core data structures for the BLD compiler
+# These define the types that flow through the compiler pipeline
+#
+# Cost: These are data definitions (no runtime traversal cost)
+#   B_types = |kind| per structure (defines the type space)
+#   D_fields = field count (defines data layout)
+#   L_refs = inter-structure references (defines relationships)
+
+# =============================================================================
+# Token - output of tokenizer, input to parser
+# =============================================================================
+
+structure Token
+
+# What kind of token this is - boundary for type checking
+B kind: keyword | identifier | number | string | symbol | newline | indent | dedent | eof
+
+# Token data fields
+D kind: 1
+D text: 1 [input]
+D line: 1
+D column: 1
+
+returns: Token
+
+
+# =============================================================================
+# ASTNode - nodes in the abstract syntax tree
+# =============================================================================
+
+structure ASTNode
+
+# What kind of AST node
+B node_type: structure_decl | boundary_decl | link_decl | dimension_decl | parameter_decl | returns_decl | comment
+
+# Node data
+D name: identifier
+D children: M [parallel, type=ASTNode]
+D properties: K [parallel]
+
+returns: ASTNode
+
+
+# =============================================================================
+# ParsedBoundary - a B declaration with semantic annotations
+# =============================================================================
+
+structure ParsedBoundary
+
+D name: identifier
+D variants: M [parallel]
+# Semantic annotations: maps partition name to semantic content
+# e.g., "whitespace" -> "pattern(b' ' | b'\t')"
+D semantics: K [parallel]
+
+returns: ParsedBoundary
+
+
+# =============================================================================
+# ParsedLink - an L declaration
+# =============================================================================
+
+structure ParsedLink
+
+D name: identifier
+D source: identifier
+D target: identifier
+D deps: 1
+D properties: K [parallel]
+
+# Composition: which structure implements this link
+D uses: identifier [optional]
+
+returns: ParsedLink
+
+
+# =============================================================================
+# ParsedDimension - a D declaration
+# =============================================================================
+
+structure ParsedDimension
+
+D name: identifier
+D extent: identifier
+D properties: K [parallel]
+
+# Type of elements in this dimension
+D element_type: identifier [optional]
+
+returns: ParsedDimension
+
+
+# =============================================================================
+# ParsedParameter - a P declaration
+# =============================================================================
+
+structure ParsedParameter
+
+D name: identifier
+D param_type: identifier
+D properties: K [parallel]
+
+returns: ParsedParameter
+
+
+# =============================================================================
+# ParsedStructure - complete parsed .bld file
+# =============================================================================
+
+structure ParsedStructure
+
+D name: identifier
+D boundaries: M [parallel, type=ParsedBoundary]
+D links: N [parallel, type=ParsedLink]
+D dimensions: K [parallel, type=ParsedDimension]
+D parameters: P [parallel, type=ParsedParameter]
+D return_type: identifier [optional]
+
+returns: ParsedStructure

@@ -1,0 +1,9 @@
+# concatMap - Map then flatten (flatMap / bind)
+# Combines map and concat
+
+structure concatMap
+
+D xs: N [contiguous]
+B empty_check: empty | non_empty
+L apply_f: element -> list (deps=0)
+L flatten: nested -> flat (pattern=reduce)

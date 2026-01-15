@@ -1,0 +1,19 @@
+# drotg: Generate Givens rotation
+# Given a,b, computes c,s,r such that:
+#   [c  s] [a]   [r]
+#   [-s c] [b] = [0]
+# Pattern: sequential (scalar computation)
+# BLAS signature: drotg_(a, b, c, s)
+
+structure drotg_
+
+P a: double [input, output]
+P b: double [input, output]
+P c: double [output]
+P s: double [output]
+
+B cases: b_zero | a_zero | general
+
+L generate: a -> c (deps=1)
+
+returns: void

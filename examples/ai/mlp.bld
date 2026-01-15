@@ -1,0 +1,39 @@
+# MLP - Multi-Layer Perceptron
+# Composed from dense layers
+#
+# BLD Analysis:
+#   D: layers (sequential pipeline)
+#   B: layer boundaries
+#   L: layer-to-layer transformations via composition
+#
+# This demonstrates BLD's composition model:
+# Each layer is a structure, MLP composes them
+
+structure mlp
+
+# Dimensions - the data flowing through
+D input: in_dim [parallel, input]
+D hidden: hidden_dim [parallel]
+D output: out_dim [parallel, output]
+
+# Architecture parameters
+P num_layers: int
+P hidden_dim: int
+P dropout_rate: double
+
+# Boundaries
+B training_mode: train | inference
+  discriminator: is_training
+  train -> apply_dropout
+  inference -> no_dropout
+
+# Pipeline of dense layers
+# uses= composes the dense structure
+L layer_1: input -> hidden (uses=dense, deps=1)
+L layer_hidden: hidden -> hidden (uses=dense, deps=1)
+L layer_out: hidden -> output (uses=dense, deps=1)
+
+# Dropout boundary (only in training)
+L dropout: hidden -> hidden (deps=0)
+
+returns: output

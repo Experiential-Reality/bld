@@ -1,0 +1,44 @@
+# BLD Pattern Detector - analyzes structure to determine execution pattern
+# Third stage of the compiler pipeline
+#
+# Cost(detect_pattern) = B_patterns + D_links × L_check
+#   B_patterns = |execution_pattern| = 4 (invariant)
+#   D_links = N (scales with structure size)
+#   L_check = per-link analysis cost (geometric)
+#
+# Phase 1: Extract & classify (deps=0, parallel over D_links)
+# Phase 2: Reduce to booleans (deps=0, parallel tree reduction)
+# Phase 3: Select pattern (deps=1, depends on all reductions)
+
+structure PatternDetector
+
+# Input: parsed structure
+D parsed: 1 [input, type=ParsedStructure]
+
+# Output: detected execution pattern
+D pattern: 1 [output]
+
+# Working data
+D links: N [input]
+D deps_values: N [parallel]
+D has_hierarchy: N [parallel]
+D has_communication: N [parallel]
+
+# Boundaries - pattern classification
+B execution_pattern: parallel | sequential | tree | scan
+B deps_class: zero | nonzero
+B has_special: hierarchy | communication | neither
+
+# Links - pattern analysis (all parallel)
+L extract_deps: links -> deps_values (deps=0)
+L classify_deps: deps_values -> deps_class (deps=0)
+L check_hierarchy: links -> has_hierarchy (deps=0)
+L check_communication: links -> has_communication (deps=0)
+
+# Aggregation
+L any_hierarchy: has_hierarchy -> result (deps=0)
+L any_communication: has_communication -> result (deps=0)
+L any_sequential: deps_class -> result (deps=0)
+L select_pattern: results -> execution_pattern (deps=1)  # Depends on all reductions
+
+returns: execution_pattern

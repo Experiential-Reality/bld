@@ -1,0 +1,39 @@
+# Softmax - Probability distribution over classes
+# softmax(x)_i = exp(x_i) / sum(exp(x))
+#
+# BLD Analysis:
+#   B: numerical stability (max subtraction)
+#   L: exp and sum operations
+#   deps=1 on sum because all elements needed
+#
+# Key: softmax IS a boundary normalizer
+# It partitions the output space into probabilities that sum to 1
+
+structure softmax
+
+D logits: N [parallel, input]
+D probs: N [parallel, output]
+
+# Boundary: numerical stability
+B stability: stable | overflow_risk
+  discriminator: max_logit
+  stable -> direct_computation
+  overflow_risk -> subtract_max_first
+
+# Links
+# Step 1: Find max for stability (reduction, deps=1)
+L find_max: logits -> max_val (deps=1, hierarchy_depth=log2_N)
+
+# Step 2: Subtract max (parallel, deps=0)
+L subtract_max: logits -> shifted (deps=0)
+
+# Step 3: Compute exp (parallel, deps=0)
+L exp: shifted -> exp_vals (deps=0)
+
+# Step 4: Sum (reduction, deps=1)
+L sum: exp_vals -> sum_val (deps=1, hierarchy_depth=log2_N)
+
+# Step 5: Divide (parallel, deps=0)
+L normalize: exp_vals -> probs (deps=0)
+
+returns: probs

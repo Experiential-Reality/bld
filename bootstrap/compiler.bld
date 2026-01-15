@@ -1,0 +1,43 @@
+# BLD Compiler - self-hosted compiler for BLD language
+# Composes the four pipeline stages into a complete compiler
+#
+# Cost(compile) = Σ Cost(stage) = Cost(tokenize) + Cost(parse) + Cost(detect) + Cost(emit)
+#   = (B_chars + D_N × L_trans) + (B_rules + D_M × L_match) + (B_patterns + D_K × L_check) + (B_phases + D_J × L_emit)
+#   Simplifies to: O(N) where N = source file size (all stages are linear)
+#
+# Bootstrap path:
+#   1. Python BLD compiler reads this file
+#   2. Emits Rust code (bld_compiler.rs)
+#   3. rustc compiles to native binary (bld_native)
+#   4. bld_native can compile itself (self-hosting)
+
+structure BLDCompiler
+
+# Input: source file contents
+D source: N [input, contiguous]
+
+# Output: generated Rust code
+D rust_code: M [output, sequential]
+
+# Target language
+P target: string
+
+# Intermediate representations
+D tokens: M [type=Token]
+D parsed: 1 [type=ParsedStructure]
+D pattern: 1
+
+# Boundaries
+B phase: tokenize | parse | detect | emit | done
+B error: none | tokenize_error | parse_error | emit_error
+
+# Pipeline composition using structure references
+L tokenize: source -> tokens (uses=Tokenizer, deps=0)
+L parse: tokens -> parsed (uses=Parser, deps=1)
+L detect: parsed -> pattern (uses=PatternDetector, deps=0)
+L emit: parsed -> rust_code (uses=RustEmitter, deps=1)
+
+# Entry point
+L compile: source -> rust_code (deps=1)
+
+returns: rust_code

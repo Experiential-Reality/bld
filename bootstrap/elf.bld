@@ -1,0 +1,142 @@
+# elf.bld - ELF64 executable format as BLD
+#
+# When traversed with code bytes, emits a complete ELF executable.
+#
+# ELF structure:
+#   - ELF header (64 bytes)
+#   - Program header (56 bytes)
+#   - Code section (.text)
+#   - Section headers (optional for minimal executable)
+#
+# Cost(emit_elf) = B_sections + D_headers * L_emit + D_code
+#   B_sections = 3 (header, phdr, code) - invariant
+#   D_headers = 2 (elf header + 1 program header)
+#   D_code = N (scales with code size)
+
+structure ELF64
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D code: N [input, sequential]
+D output: M [output, sequential]
+
+# Constants
+P base_addr: 0x400000
+P code_offset: 0x78
+
+# =============================================================================
+# BOUNDARIES - ELF components
+# =============================================================================
+
+# ELF header fields
+B elf_header: magic | class | data | version | osabi | type | machine | entry | phoff | shoff | flags | ehsize | phentsize | phnum | shentsize | shnum | shstrndx
+  # ELF magic: 7f 45 4c 46
+  magic -> emit_bytes(0x7F, 0x45, 0x4C, 0x46)
+
+  # EI_CLASS: 64-bit = 2
+  class -> emit_byte(0x02)
+
+  # EI_DATA: little endian = 1
+  data -> emit_byte(0x01)
+
+  # EI_VERSION: 1
+  version -> emit_byte(0x01)
+
+  # EI_OSABI: SYSV = 0
+  osabi -> emit_byte(0x00)
+
+  # EI_PAD: 8 bytes of padding
+  # (handled inline)
+
+  # e_type: ET_EXEC = 2
+  type -> emit_u16(0x02)
+
+  # e_machine: EM_X86_64 = 62
+  machine -> emit_u16(0x3E)
+
+  # e_version: 1
+  # e_entry: base_addr + code_offset
+  # e_phoff: 64 (immediately after ELF header)
+  # e_shoff: 0 (no section headers for minimal)
+  # e_flags: 0
+  # e_ehsize: 64
+  # e_phentsize: 56
+  # e_phnum: 1
+  # e_shentsize: 64
+  # e_shnum: 0
+  # e_shstrndx: 0
+
+# Program header fields
+B phdr: p_type | p_flags | p_offset | p_vaddr | p_paddr | p_filesz | p_memsz | p_align
+  # PT_LOAD = 1
+  p_type -> emit_u32(0x01)
+
+  # PF_R | PF_X = 5 (readable + executable)
+  p_flags -> emit_u32(0x05)
+
+  # p_offset: code_offset (0x78)
+  # p_vaddr: base_addr + code_offset
+  # p_paddr: same
+  # p_filesz: code size
+  # p_memsz: code size
+  # p_align: 0x1000 (page aligned)
+
+# =============================================================================
+# LINKS - ELF emission sequence
+# =============================================================================
+
+# Emit complete ELF header
+L emit_elf_header: unit -> output (deps=1)
+
+# Emit program header
+L emit_phdr: code -> output (deps=1)
+
+# Emit code section
+L emit_code: code -> output (deps=0)
+
+# Full ELF emission (sequential: header, phdr, code)
+L emit_elf: code -> output (deps=1)
+
+returns: output
+
+# =============================================================================
+# INLINE EMISSION SEQUENCE (for traverser to execute)
+# =============================================================================
+
+# The traverser executes these in order when traversing this structure:
+#
+# 1. ELF Header (64 bytes):
+#    emit_bytes(0x7F, 0x45, 0x4C, 0x46)  # magic
+#    emit_byte(0x02)                      # class (64-bit)
+#    emit_byte(0x01)                      # data (little endian)
+#    emit_byte(0x01)                      # version
+#    emit_byte(0x00)                      # osabi
+#    emit_bytes(0,0,0,0,0,0,0,0)          # padding (8 bytes)
+#    emit_u16(0x02)                       # type (ET_EXEC)
+#    emit_u16(0x3E)                       # machine (x86-64)
+#    emit_u32(0x01)                       # version
+#    emit_u64($entry)                     # entry point
+#    emit_u64(0x40)                       # phoff (64)
+#    emit_u64(0x00)                       # shoff (0)
+#    emit_u32(0x00)                       # flags
+#    emit_u16(0x40)                       # ehsize (64)
+#    emit_u16(0x38)                       # phentsize (56)
+#    emit_u16(0x01)                       # phnum (1)
+#    emit_u16(0x40)                       # shentsize (64)
+#    emit_u16(0x00)                       # shnum (0)
+#    emit_u16(0x00)                       # shstrndx (0)
+#
+# 2. Program Header (56 bytes):
+#    emit_u32(0x01)                       # p_type (PT_LOAD)
+#    emit_u32(0x05)                       # p_flags (R|X)
+#    emit_u64(0x00)                       # p_offset
+#    emit_u64($base)                      # p_vaddr
+#    emit_u64($base)                      # p_paddr
+#    emit_u64($filesz)                    # p_filesz
+#    emit_u64($memsz)                     # p_memsz
+#    emit_u64(0x1000)                     # p_align
+#
+# 3. Code:
+#    emit($code)                          # raw code bytes

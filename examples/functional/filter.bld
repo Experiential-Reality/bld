@@ -1,0 +1,10 @@
+# filter - Keep elements satisfying predicate
+# Boundary partitions on predicate result
+
+structure filter
+
+D xs: N [contiguous]
+B empty_check: empty | non_empty
+B predicate: passes | fails
+L test: element -> bool (deps=0)
+L keep: element -> result (deps=1)

@@ -1,0 +1,8 @@
+# foldr - Right fold (tree reduction)
+# hierarchy_depth enables tree reduction in log(n) rounds
+
+structure foldr
+
+D xs: N [contiguous]
+B empty_check: empty | non_empty
+L combine: element -> acc (hierarchy_depth=8)

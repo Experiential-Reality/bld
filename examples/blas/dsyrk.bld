@@ -1,0 +1,24 @@
+# dsyrk: Symmetric rank-k update
+# C := alpha*A*A^T + beta*C or C := alpha*A^T*A + beta*C (C symmetric)
+# Pattern: Self outer-product, only upper or lower triangle updated
+# BLAS signature: dsyrk_(uplo, trans, n, k, alpha, A, lda, beta, C, ldc)
+
+structure dsyrk_
+
+P uplo: char
+P trans: char
+P n: int
+P k: int
+P alpha: double
+D A: n_times_k [input]
+P lda: int [stride]
+P beta: double
+D C: n_times_n [input, output]
+P ldc: int [stride]
+
+B triangle: upper | lower
+B transpose: normal | transposed
+
+L syrk: A -> C (deps=1)
+
+returns: void

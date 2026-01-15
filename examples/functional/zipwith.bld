@@ -1,0 +1,9 @@
+# zipWith - Combine elements with function
+# Map over zip
+
+structure zipWith
+
+D xs: N [parallel, contiguous]
+D ys: M [parallel, contiguous]
+B either_empty: both_non_empty | xs_empty | ys_empty
+L apply_f: pair -> result (deps=0)

@@ -1,0 +1,15 @@
+# idamax: argmax(|x[i]|) (1-indexed for Fortran)
+# Pattern: sequential (deps=1, tracking index)
+# BLAS signature: idamax_(n, x, incx)
+
+structure idamax_
+
+P n: int
+D x: n [input]
+P incx: int [stride, default=1]
+
+B empty: n_zero | n_single | n_many
+
+L find_max: x -> idx (deps=1)
+
+returns: int

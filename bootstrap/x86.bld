@@ -1,0 +1,120 @@
+# x86.bld - x86-64 instruction encoding as executable BLD
+#
+# When traversed, this structure emits x86 machine code.
+# The semantic annotations call primitive emit operations.
+#
+# Usage: traverse(X86, instructions=[...]) -> bytes
+#
+# Example instruction format (input):
+#   { op: "mov", dst: "rax", src: "rbx" }
+#   { op: "push", reg: "rbp" }
+#   { op: "ret" }
+
+structure X86
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D instructions: N [input, sequential]
+D output: M [output, sequential]
+
+# =============================================================================
+# BOUNDARIES - Instruction dispatch
+# =============================================================================
+
+# Main instruction dispatch - each partition emits bytes for that instruction
+B instruction: mov_rr | mov_rm | mov_mr | mov_ri | push | pop | add_rr | sub_rr | xor_rr | cmp_rr | test_rr | call | ret | jmp | je | jne | jl | jge | jle | jg | nop | prologue | epilogue
+  # MOV r64, r64: REX.W 89 /r (src in reg field)
+  mov_rr -> emit_byte(0x48), emit_byte(0x89), modrm(3, $src, $dst)
+
+  # MOV r64, [r64]: REX.W 8B /r
+  mov_rm -> emit_byte(0x48), emit_byte(0x8B), modrm(0, $dst, $src)
+
+  # MOV [r64], r64: REX.W 89 /r
+  mov_mr -> emit_byte(0x48), emit_byte(0x89), modrm(0, $src, $dst)
+
+  # MOV r64, imm64: REX.W B8+rd io
+  mov_ri -> rex(1, 0, 0, $dst_ext), emit_byte(0xB8 + $dst_lo), emit_u64($imm)
+
+  # PUSH r64: 50+rd (REX.B for r8-r15)
+  push -> rex(0, 0, 0, $reg_ext), emit_byte(0x50 + $reg_lo)
+
+  # POP r64: 58+rd
+  pop -> rex(0, 0, 0, $reg_ext), emit_byte(0x58 + $reg_lo)
+
+  # ADD r64, r64: REX.W 01 /r
+  add_rr -> emit_byte(0x48), emit_byte(0x01), modrm(3, $src, $dst)
+
+  # SUB r64, r64: REX.W 29 /r
+  sub_rr -> emit_byte(0x48), emit_byte(0x29), modrm(3, $src, $dst)
+
+  # XOR r64, r64: REX.W 31 /r
+  xor_rr -> emit_byte(0x48), emit_byte(0x31), modrm(3, $src, $dst)
+
+  # CMP r64, r64: REX.W 39 /r
+  cmp_rr -> emit_byte(0x48), emit_byte(0x39), modrm(3, $src, $dst)
+
+  # TEST r64, r64: REX.W 85 /r
+  test_rr -> emit_byte(0x48), emit_byte(0x85), modrm(3, $src, $dst)
+
+  # CALL rel32: E8 cd
+  call -> emit_byte(0xE8), reloc($target)
+
+  # RET: C3
+  ret -> emit_byte(0xC3)
+
+  # JMP rel32: E9 cd
+  jmp -> emit_byte(0xE9), reloc($target)
+
+  # Jcc rel32: 0F 8x cd
+  je -> emit_bytes(0x0F, 0x84), reloc($target)
+  jne -> emit_bytes(0x0F, 0x85), reloc($target)
+  jl -> emit_bytes(0x0F, 0x8C), reloc($target)
+  jge -> emit_bytes(0x0F, 0x8D), reloc($target)
+  jle -> emit_bytes(0x0F, 0x8E), reloc($target)
+  jg -> emit_bytes(0x0F, 0x8F), reloc($target)
+
+  # NOP: 90
+  nop -> emit_byte(0x90)
+
+  # Function prologue: push rbp; mov rbp, rsp
+  prologue -> emit_byte(0x55), emit_bytes(0x48, 0x89, 0xE5)
+
+  # Function epilogue: pop rbp; ret
+  epilogue -> emit_byte(0x5D), emit_byte(0xC3)
+
+# =============================================================================
+# BOUNDARIES - Register encoding helpers
+# =============================================================================
+
+# Register number (low 3 bits) and extension bit (for r8-r15)
+B reg_encode: rax | rcx | rdx | rbx | rsp | rbp | rsi | rdi | r8 | r9 | r10 | r11 | r12 | r13 | r14 | r15
+  rax -> set(reg_lo, 0), set(reg_ext, 0)
+  rcx -> set(reg_lo, 1), set(reg_ext, 0)
+  rdx -> set(reg_lo, 2), set(reg_ext, 0)
+  rbx -> set(reg_lo, 3), set(reg_ext, 0)
+  rsp -> set(reg_lo, 4), set(reg_ext, 0)
+  rbp -> set(reg_lo, 5), set(reg_ext, 0)
+  rsi -> set(reg_lo, 6), set(reg_ext, 0)
+  rdi -> set(reg_lo, 7), set(reg_ext, 0)
+  r8 -> set(reg_lo, 0), set(reg_ext, 1)
+  r9 -> set(reg_lo, 1), set(reg_ext, 1)
+  r10 -> set(reg_lo, 2), set(reg_ext, 1)
+  r11 -> set(reg_lo, 3), set(reg_ext, 1)
+  r12 -> set(reg_lo, 4), set(reg_ext, 1)
+  r13 -> set(reg_lo, 5), set(reg_ext, 1)
+  r14 -> set(reg_lo, 6), set(reg_ext, 1)
+  r15 -> set(reg_lo, 7), set(reg_ext, 1)
+
+# =============================================================================
+# LINKS - Encoding pipeline
+# =============================================================================
+
+# Main encoding loop
+L encode_all: instructions -> output (deps=1)
+
+# Single instruction encoding
+L encode_one: instruction -> output (deps=1)
+
+returns: output

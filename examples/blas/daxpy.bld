@@ -1,0 +1,18 @@
+# daxpy: y = alpha*x + y
+# Pattern: parallel (deps=0)
+# BLAS signature: daxpy_(n, alpha, x, incx, y, incy)
+
+structure daxpy_
+
+P n: int
+P alpha: double
+D x: n [input]
+P incx: int [stride, default=1]
+D y: n [input, output]
+P incy: int [stride, default=1]
+
+B skip: alpha_zero | alpha_nonzero
+
+L fma: x -> y (deps=0)
+
+returns: void

@@ -1,0 +1,14 @@
+# dscal: x = alpha*x
+# Pattern: parallel (deps=0)
+# BLAS signature: dscal_(n, alpha, x, incx)
+
+structure dscal_
+
+P n: int
+P alpha: double
+D x: n [input, output]
+P incx: int [stride, default=1]
+
+L scale: x -> x (deps=0)
+
+returns: void

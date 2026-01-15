@@ -1,0 +1,9 @@
+# take - Take first n elements
+# Boundary on count
+
+structure take
+
+D xs: N [contiguous]
+B count_check: zero_or_negative | positive
+B empty_check: empty | non_empty
+L slice: elements -> prefix (deps=0)

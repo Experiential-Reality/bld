@@ -1,0 +1,8 @@
+# scanl - Running prefix sum
+# communication_distances=[1] means each element sees previous
+
+structure scanl
+
+D xs: N [contiguous]
+B empty_check: empty | non_empty
+L accumulate: element -> running (communication_distances=[1])

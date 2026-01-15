@@ -1,0 +1,9 @@
+# takeWhile - Take elements while predicate holds
+# deps=1 because we stop on first failure
+
+structure takeWhile
+
+D xs: N [contiguous]
+B empty_check: empty | non_empty
+B predicate: passes | fails
+L test_and_take: element -> maybe_result (deps=1)

@@ -1,0 +1,9 @@
+# zip - Pair elements from two lists
+# Two parallel dimensions
+
+structure zip
+
+D xs: N [parallel, contiguous]
+D ys: M [parallel, contiguous]
+B either_empty: both_non_empty | xs_empty | ys_empty
+L pair: elements -> tuple (deps=0)

@@ -1,0 +1,27 @@
+# dtrsm: Triangular solve with multiple right-hand sides
+# op(A)*X = alpha*B or X*op(A) = alpha*B (A triangular, X overwrites B)
+# Pattern: Sequential over columns/rows with triangular solve
+# BLAS signature: dtrsm_(side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb)
+
+structure dtrsm_
+
+P side: char
+P uplo: char
+P trans: char
+P diag: char
+P m: int
+P n: int
+P alpha: double
+D A: k_times_k [input]
+P lda: int [stride]
+D B: m_times_n [input, output]
+P ldb: int [stride]
+
+B position: left | right
+B triangle: upper | lower
+B transpose: normal | transposed
+B diagonal: unit | non_unit
+
+L trsm: A -> B (deps=1)
+
+returns: void

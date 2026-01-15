@@ -1,0 +1,194 @@
+# bld.bld - BLD defining itself
+# The grammar of BLD expressed as a BLD structure
+#
+# Cost(parse_bld_file) = B_grammar + D_tokens × L_match
+#   B_grammar = |decl_type| + |token| + ... = 7 + 9 + ... = fixed (invariant)
+#   D_tokens = N (scales with source file size)
+#   L_match = 1 per token (geometric)
+#
+# Meta-insight: A language IS structure. Parsing IS traversal.
+# The grammar IS the structure of valid programs.
+#
+# This file answers the three questions about BLD itself:
+#   Q1: Where does behavior partition? → Token types, declaration types
+#   Q2: What connects to what? → Grammar productions
+#   Q3: What repeats? → Multiple declarations, partitions, properties
+#
+# The parser is a traverser. This structure is what it traverses.
+
+structure BLDGrammar
+
+# =============================================================================
+# DIMENSION: What repeats in a BLD file
+# =============================================================================
+
+# A .bld file contains multiple structures
+D structures: N [parallel]
+
+# Each structure contains multiple declarations
+D declarations: M [parallel]
+
+# Boundaries have multiple partitions separated by |
+D partitions: K [parallel]
+
+# Declarations have multiple properties in [brackets]
+D properties: P [parallel]
+
+# Partitions can have multiple semantic annotations (indented lines)
+D semantics: S [parallel]
+
+# Link attributes in (parentheses)
+D attributes: A [parallel]
+
+# =============================================================================
+# BOUNDARY: What partitions meaning in BLD syntax
+# =============================================================================
+
+# Top-level file elements
+B file_element: structure_decl | comment | blank
+  structure_decl -> keyword("structure"), whitespace, identifier
+  comment -> char("#"), skip_to_eol
+  blank -> only_whitespace
+
+# Declaration types within a structure body
+B decl_type: boundary | link | dimension | parameter | returns | semantic_line | comment
+  boundary -> keyword("B"), whitespace, identifier, colon, partitions
+  link -> keyword("L"), whitespace, identifier, colon, flow
+  dimension -> keyword("D"), whitespace, identifier, colon, extent
+  parameter -> keyword("P"), whitespace, identifier, colon, type
+  returns -> keyword("returns"), colon, type
+  semantic_line -> indent, identifier, arrow, semantic_content
+  comment -> char("#"), skip_to_eol
+
+# Token types produced by tokenizer
+B token: keyword | identifier | number | string | symbol | newline | indent | dedent | eof
+  keyword -> one_of("structure", "B", "L", "D", "P", "returns")
+  identifier -> regex([a-zA-Z_][a-zA-Z0-9_]*)
+  number -> regex([0-9]+)
+  string -> char('"'), content, char('"')
+  symbol -> one_of(":", "|", "->", "[", "]", "(", ")", ",", "=")
+  newline -> char('\n')
+  indent -> spaces_gt_current
+  dedent -> spaces_lt_current
+  eof -> end_of_input
+
+# Extent types for dimensions
+B extent_type: fixed | symbolic | computed
+  fixed -> number
+  symbolic -> identifier
+  computed -> expr_with_ops
+
+# Property categories
+B prop_category: execution | io | memory | typing | scalar
+  execution -> one_of("parallel", "sequential")
+  io -> one_of("input", "output")
+  memory -> one_of("contiguous", "stride")
+  typing -> keyword("type"), equals, identifier
+  scalar -> keyword("scalar"), optional(type_annotation)
+
+# Link attributes
+B link_attr: deps | pattern | engine | uses | rho | count | ops | scaling
+  deps -> keyword("deps"), equals, number
+  pattern -> one_of("coalesced", "scatter", "broadcast", "reduce")
+  engine -> one_of("memory", "compute", "copy")
+  uses -> keyword("uses"), equals, identifier
+  rho -> keyword("rho"), equals, number
+  count -> keyword("count"), equals, number
+  ops -> keyword("ops"), equals, number
+  scaling -> one_of("per_block", "per_chunk")
+
+# Semantic annotation types (for code generation)
+B semantic_type: pattern_match | text_match | action | emit | next_state | compose
+  pattern_match -> keyword("pattern"), paren_content
+  text_match -> keyword("text_match"), paren_content
+  action -> keyword("action"), paren_content
+  emit -> keyword("emit_kind"), paren_content
+  next_state -> keyword("next_state"), paren_content
+  compose -> keyword("uses"), paren_content
+
+# =============================================================================
+# LINK: How BLD elements connect (grammar productions)
+# =============================================================================
+
+# File structure
+L file_parse: source -> structures (deps=0)
+L structure_parse: keyword_structure -> name -> body (deps=1)
+L body_parse: newline -> declarations (deps=1)
+
+# Declaration parsing - each has deps=1 (must complete before next)
+L boundary_parse: B -> name -> colon -> partitions (deps=1)
+L link_parse: L -> name -> colon -> from -> arrow -> to -> attrs (deps=1)
+L dimension_parse: D -> name -> colon -> extent -> props (deps=1)
+L parameter_parse: P -> name -> colon -> type -> props (deps=1)
+L returns_parse: returns -> colon -> type (deps=1)
+
+# Partition list parsing
+L partitions_parse: partition -> pipe_partition* (deps=0)
+L partition_item: identifier -> semantics? (deps=0)
+
+# Property list parsing
+L props_parse: bracket_open -> prop_list -> bracket_close (deps=1)
+L prop_list: prop -> comma_prop* (deps=0)
+
+# Attribute list parsing
+L attrs_parse: paren_open -> attr_list -> paren_close (deps=1)
+L attr_list: attr -> comma_attr* (deps=0)
+
+# Semantic annotation parsing
+L semantic_parse: indent -> key -> arrow -> value (deps=1)
+L semantic_content: key_value -> comma_key_value* (deps=0)
+
+# =============================================================================
+# D×L SCALING ANALYSIS
+# =============================================================================
+
+# What SCALES with input size (geometric, L):
+#   - Number of tokens processed
+#   - Number of declarations parsed
+#   - Number of partitions per boundary
+#   - Cost per declaration parse
+#
+# What is INVARIANT (topological, B):
+#   - The set of declaration types {B, L, D, P, returns}
+#   - The set of valid token types
+#   - The grammar rules themselves
+#   - Number of boundaries in the grammar
+#
+# Cost formula for parsing a BLD file:
+#   Cost(parse) = B_grammar + D_tokens × L_match
+#
+# Where:
+#   B_grammar = |boundaries| + |productions| (fixed)
+#   D_tokens = number of tokens in source
+#   L_match = average cost to match one production
+
+# =============================================================================
+# THE SELF-REFERENCE
+# =============================================================================
+
+# This structure describes itself:
+#
+#   It HAS boundaries:
+#     - decl_type (what kinds of declarations exist)
+#     - token (what kinds of tokens exist)
+#     - extent_type, prop_category, link_attr, semantic_type
+#
+#   It HAS links:
+#     - file_parse, structure_parse, boundary_parse, etc.
+#     - Each link is a grammar production rule
+#
+#   It HAS dimensions:
+#     - structures, declarations, partitions, properties, semantics
+#     - Each dimension is a source of repetition
+#
+# The traverser that interprets this structure IS the parser.
+# When we parse a .bld file, we are traversing THIS structure
+# over the token stream.
+#
+# The bootstrap circle:
+#   bld.bld → tokenizer.bld → parser.bld → can parse bld.bld
+#
+# This is not circular dependency - it's structural recursion.
+# The same structure can describe itself because structure is universal.
+
+returns: ParsedBLDFile

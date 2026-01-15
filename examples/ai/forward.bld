@@ -1,0 +1,31 @@
+# Forward Pass - Neural network inference
+# output = network(input)
+#
+# BLD Analysis:
+#   The forward pass IS alignment cost computation
+#   Cost = B_cost (activation boundaries) + D × L_cost (weighted connections)
+#
+# Key insight: Forward pass computes how well input aligns with learned structure
+
+structure forward
+
+# Input/output dimensions
+D input: batch_times_in_dim [parallel, input]
+D output: batch_times_out_dim [parallel, output]
+
+# Batch dimension is parallel (each sample independent)
+D batch: N [parallel]
+
+# Boundaries: data validation
+B valid_input: valid | invalid
+  discriminator: input_shape
+  valid -> proceed
+  invalid -> error
+
+# The forward pass composes layer transformations
+# Each L represents information flow through the network
+# rho values on links ARE the weights (correlations)
+
+L transform: input -> output (uses=mlp, deps=1)
+
+returns: output

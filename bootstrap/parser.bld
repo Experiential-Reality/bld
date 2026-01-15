@@ -1,0 +1,75 @@
+# BLD Parser - converts token stream to AST
+# Second stage of the compiler pipeline
+#
+# Cost(parse) = B_rules + D_tokens × L_match
+#   B_rules = |line_type| × |parse_state| = 9 × 4 = 36 grammar rules (invariant)
+#   D_tokens = N (scales with token stream length)
+#   L_match = 1 per token classification (geometric)
+#   Total: O(N) with constant factor from recursive descent
+#
+# Semantic annotations describe line classification and state transitions.
+# The interpreter generates a recursive descent parser from these.
+
+structure Parser
+
+# Input: token stream from Tokenizer
+D tokens: N [input, type=Token]
+
+# Output: parsed structure
+D parsed: 1 [output, type=ParsedStructure]
+
+# Working state
+D position: 1 [sequential]
+D current_structure: 1 [sequential]
+
+# Boundary 1: Line type classification
+# Each partition matches a keyword token
+B line_type: structure_start | B_decl | L_decl | D_decl | P_decl | returns_line | comment | blank | eof
+  structure_start -> keyword_match("structure")
+  B_decl -> keyword_match("B")
+  L_decl -> keyword_match("L")
+  D_decl -> keyword_match("D")
+  P_decl -> keyword_match("P")
+  returns_line -> keyword_match("returns")
+  eof -> token_kind(Eof)
+
+# Boundary 2: Parser state machine
+B parse_state: top_level | in_structure | after_returns | error
+  top_level -> initial_state, expect(structure_start)
+  in_structure -> accept(B_decl, L_decl, D_decl, P_decl, returns_line)
+  after_returns -> accept(eof, structure_start)
+  error -> terminal_state
+
+# Boundary 3: Property parsing state
+B prop_state: before_props | in_props | after_props
+  before_props -> expect(bracket_open)
+  in_props -> accept(identifier, comma)
+  after_props -> expect(bracket_close)
+
+# Boundary 4: Error recovery state (hidden B - made explicit)
+# Determines parser behavior when encountering syntax errors
+B sync_state: synced | recovering | failed
+  synced -> continue_parsing
+  recovering -> skip_to_sync_point, consume_until(newline | structure_start)
+  failed -> emit_errors, return_partial_ast
+
+# Links - parsing operations
+L peek: tokens -> token (deps=0)
+L consume: position -> token (deps=1)
+L expect: token -> token (deps=1)
+L classify_line: token -> line_type (deps=0)
+
+# Declaration parsers
+L parse_boundary: tokens -> boundary (deps=1)
+L parse_link: tokens -> link (deps=1)
+L parse_dimension: tokens -> dimension (deps=1)
+L parse_parameter: tokens -> parameter (deps=1)
+L parse_returns: tokens -> return_type (deps=1)
+
+# Structure assembly
+L dispatch: line_type -> decl (deps=1)
+L add_decl: decl -> current_structure (deps=1)
+L finalize: current_structure -> parsed (deps=1)
+L parse_properties: tokens -> properties (deps=1)
+
+returns: ParsedStructure

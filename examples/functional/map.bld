@@ -1,0 +1,8 @@
+# map - Apply function to each element
+# deps=0 means parallel execution
+
+structure map
+
+D xs: N [parallel, contiguous]
+B empty_check: empty | non_empty
+L apply_f: element -> result (deps=0)

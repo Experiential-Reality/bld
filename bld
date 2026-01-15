@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""BLD - Boundary/Link/Dimension Language Compiler
+
+Usage:
+    bld compile <file.bld> [-o output]   Compile to native executable
+    bld run <file.bld>                   Compile and run immediately
+    bld parse <file.bld>                 Parse and show structure
+"""
+
+import os
+import sys
+import tempfile
+
+# Add src to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+from bld.parser import parse
+from bld.traverser import Traverser
+from bld.elf import emit_elf64
+
+
+def cmd_compile(args):
+    """Compile .bld to native executable."""
+    if len(args) < 1:
+        print("Usage: bld compile <file.bld> [-o output]")
+        return 1
+
+    input_file = args[0]
+    output_file = None
+
+    if '-o' in args:
+        idx = args.index('-o')
+        if idx + 1 < len(args):
+            output_file = args[idx + 1]
+
+    if not output_file:
+        output_file = os.path.splitext(input_file)[0]
+
+    with open(input_file) as f:
+        source = f.read()
+
+    structure = parse(source)
+    traverser = Traverser()
+    code = traverser.traverse(structure)
+
+    if not isinstance(code, bytes):
+        code = bytes(code) if code else b''
+
+    elf = emit_elf64(code)
+
+    with open(output_file, 'wb') as f:
+        f.write(elf)
+
+    os.chmod(output_file, 0o755)
+    print(f"Compiled {input_file} -> {output_file} ({len(elf)} bytes)")
+    return 0
+
+
+def cmd_run(args):
+    """Compile and run immediately."""
+    if len(args) < 1:
+        print("Usage: bld run <file.bld>")
+        return 1
+
+    input_file = args[0]
+
+    with open(input_file) as f:
+        source = f.read()
+
+    structure = parse(source)
+    traverser = Traverser()
+    code = traverser.traverse(structure)
+
+    if not isinstance(code, bytes):
+        code = bytes(code) if code else b''
+
+    elf = emit_elf64(code)
+
+    # Write to temp file and execute
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.elf') as f:
+        f.write(elf)
+        path = f.name
+
+    try:
+        os.chmod(path, 0o755)
+        return os.system(path)
+    finally:
+        os.unlink(path)
+
+
+def cmd_parse(args):
+    """Parse and show structure."""
+    if len(args) < 1:
+        print("Usage: bld parse <file.bld>")
+        return 1
+
+    input_file = args[0]
+
+    with open(input_file) as f:
+        source = f.read()
+
+    structure = parse(source)
+
+    print(f"Structure: {structure.name}")
+    print(f"\nBoundaries ({len(structure.boundaries)}):")
+    for b in structure.boundaries:
+        print(f"  B {b.name}: {' | '.join(p.name for p in b.partitions)}")
+        for p in b.partitions:
+            if p.semantics:
+                print(f"    {p.name} -> {', '.join(str(s) for s in p.semantics[:3])}...")
+
+    print(f"\nLinks ({len(structure.links)}):")
+    for l in structure.links:
+        attrs = ', '.join(f'{k}={v}' for k, v in l.attrs.items())
+        print(f"  L {l.name}: {l.source} -> {l.target} ({attrs})")
+
+    print(f"\nDimensions ({len(structure.dimensions)}):")
+    for d in structure.dimensions:
+        print(f"  D {d.name}: {d.extent} {d.props}")
+
+    if structure.returns:
+        print(f"\nReturns: {structure.returns}")
+
+    return 0
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        return 1
+
+    cmd = sys.argv[1]
+    args = sys.argv[2:]
+
+    commands = {
+        'compile': cmd_compile,
+        'run': cmd_run,
+        'parse': cmd_parse,
+    }
+
+    if cmd in commands:
+        return commands[cmd](args)
+    else:
+        print(f"Unknown command: {cmd}")
+        print(__doc__)
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -1,0 +1,27 @@
+# dgemv: y = alpha*op(A)*x + beta*y
+# Pattern: M parallel (rows) x N sequential (dot per row)
+# BLAS signature: dgemv_(trans, m, n, alpha, A, lda, x, incx, beta, y, incy)
+
+structure dgemv_
+
+P trans: char
+P m: int
+P n: int
+P alpha: double
+D A: m_times_n [input, column_major]
+P lda: int [stride]
+D x: var [input]
+P incx: int [stride, default=1]
+P beta: double
+D y: var [input, output]
+P incy: int [stride, default=1]
+
+B trans_mode: notrans | trans
+B empty: m_zero_or_n_zero | valid
+B skip: alpha_zero_beta_one | compute
+
+L scale_y: y -> y (deps=0)
+L dot_row: x -> temp (deps=1)
+L accumulate: temp -> y (deps=0)
+
+returns: void

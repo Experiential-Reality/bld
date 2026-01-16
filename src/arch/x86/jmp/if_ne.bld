@@ -1,0 +1,17 @@
+# if_ne.bld - JNZ/JNE (jump if not zero/not equal)
+#
+# Displacement size is structural (boundary):
+#   short → 2 bytes (opcode + rel8)
+#   near  → 6 bytes (prefix + opcode + rel32)
+#
+# Input: $disp_size (short or near), $offset or $target
+
+structure JmpIfNe
+
+D output: M [output, sequential]
+
+B disp: short | near
+  short -> uses=arch/x86/opcodes, emit($jnz_rel8), emit($offset)
+  near -> uses=arch/x86/opcodes, emit($jcc_prefix), emit($jnz_rel32), reloc($target)
+
+returns: output

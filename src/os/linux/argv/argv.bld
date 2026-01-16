@@ -1,0 +1,26 @@
+# argv.bld - Read argv[n] from stack into rax
+#
+# Linux program entry:
+#   argv[0] at [rsp + 8]
+#   argv[1] at [rsp + 16]
+#   argv[n] at [rsp + 8 + n*8]
+#
+# Input: $argv_index (0 for argv[0], 1 for argv[1], etc.)
+# Encodes: 48 8B 44 24 disp8  (mov rax, [rsp + disp8])
+#
+# ModRM: mod=01(disp8), reg=000(rax), rm=100(SIB) = 0x44
+# SIB: scale=00, index=100(none), base=100(rsp) = 0x24
+# Disp8: 8 + argv_index * 8
+
+structure ReadArgv
+
+D bytes: 5 [composed]
+
+B byte: rex | opcode | modrm | sib | disp
+  rex -> emit(0x48)
+  opcode -> emit(0x8B)
+  modrm -> emit(0x44)
+  sib -> emit(0x24)
+  disp -> emit(8 + $argv_index * 8)
+
+returns: output

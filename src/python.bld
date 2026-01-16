@@ -1,0 +1,92 @@
+# python.bld - Python language structure (bidirectional)
+#
+# Structure IS Computation: same structure for emit AND parse.
+# Mode determines direction:
+#   mode_python = "emit" -> BLD structure -> Python source
+#   mode_python = "parse" -> Python source -> BLD structure
+#
+# Bidirectional pattern: codec_* primitives check mode and act accordingly.
+#
+# Usage:
+#   # Emit Python from BLD
+#   set(mode_python, "emit")
+#   load_struct_to_state(bld_structure)
+#   traverse(Python) -> python_source_bytes
+#
+#   # Parse Python to BLD (future)
+#   set(mode_python, "parse")
+#   set(input, python_source)
+#   traverse(Python) -> bld_structure
+
+structure Python
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D input: N [input, sequential]
+D output: M [output, sequential]
+
+# =============================================================================
+# BOUNDARIES - Python language structure
+# =============================================================================
+
+# Mode selection
+B mode: emit | parse
+  emit -> set(mode_codec, "emit")
+  parse -> set(mode_codec, "parse")
+
+# Python module structure
+B module: header | imports | classes | functions | main
+  header -> codec_header
+  imports -> codec_imports
+  classes -> foreach(struct_boundaries, class_def)
+  functions -> foreach(struct_links, function_def)
+  main -> codec_main
+
+# Header emission/parsing
+B codec_header: generated_comment | future_imports
+  generated_comment -> codec("# GENERATED FROM "), codec($source_file), codec("\n# Regenerate with: bld generate\n\n")
+  future_imports -> codec("from __future__ import annotations\n")
+
+# Import statements
+B codec_imports: dataclass_import | typing_import | blank
+  dataclass_import -> codec("from dataclasses import dataclass, field\n")
+  typing_import -> codec("from typing import Any, Callable, Optional\n")
+  blank -> codec("\n")
+
+# Class definition from boundary
+B class_def: class_def
+  class_def -> codec("@dataclass\nclass "), emit_field("name"), codec(":\n"), codec("    \"\"\""), emit_field("name"), codec(" boundary.\"\"\"\n"), codec("    name: str\n\n")
+
+# Function definition from link
+B function_def: function_def
+  function_def -> codec("def "), emit_field("name"), codec("(self):\n"), codec("    \"\"\""), emit_field("name"), codec(" link.\"\"\"\n"), codec("    pass\n\n")
+
+# Main block
+B codec_main: main_guard | main_body
+  main_guard -> codec("\nif __name__ == \"__main__\":\n")
+  main_body -> codec("    pass\n")
+
+# =============================================================================
+# LINKS - Emission/parsing flow
+# =============================================================================
+
+# Main flow
+L process: input -> output (deps=1)
+
+# Sequential emission
+L emit_module: module -> output (deps=1, sequential=true)
+
+# =============================================================================
+# PARAMETERS
+# =============================================================================
+
+P indent: "    "
+P newline: "\n"
+
+# =============================================================================
+# RETURNS
+# =============================================================================
+
+returns: output

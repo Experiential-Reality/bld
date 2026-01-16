@@ -1,0 +1,46 @@
+# strcmp.bld - Compare strings at rsi and rdi
+#
+# Result in rax: 0 if equal, 1 if not equal
+# Input: strings pointed to by rsi and rdi
+# Output: x86 code with loop
+
+structure Strcmp
+
+D instructions: 14 [composed]
+
+B instruction: loop_label | load_rsi | load_rdi | compare | jne_mismatch | test_null | je_match | inc_rsi | inc_rdi | jmp_loop | match_label | set_zero | jmp_done | mismatch_label | set_one | done_label
+  # Loop start
+  loop_label -> label(strcmp_loop)
+
+  # Load bytes: al = [rsi], bl = [rdi]
+  load_rsi -> set(dst_lo, 0), set(dst_ext, 0), set(src_lo, 6), set(src_ext, 0), uses=MovRM
+  load_rdi -> set(dst_lo, 3), set(dst_ext, 0), set(src_lo, 7), set(src_ext, 0), uses=MovRM
+
+  # Compare: if al != bl, jump to mismatch
+  compare -> set(src_lo, 0), set(src_ext, 0), set(dst_lo, 3), set(dst_ext, 0), uses=CmpRR
+  jne_mismatch -> set(target, strcmp_ne), uses=Jne
+
+  # Test null: if al == 0, strings match
+  test_null -> set(src_lo, 0), set(src_ext, 0), set(dst_lo, 0), set(dst_ext, 0), uses=TestRR
+  je_match -> set(target, strcmp_eq), uses=Je
+
+  # Increment pointers
+  inc_rsi -> set(dst_lo, 6), set(imm, 1), uses=AddRI
+  inc_rdi -> set(dst_lo, 7), set(imm, 1), uses=AddRI
+
+  # Loop back
+  jmp_loop -> set(target, strcmp_loop), uses=Jmp
+
+  # Match: return 0
+  match_label -> label(strcmp_eq)
+  set_zero -> set(dst_lo, 0), set(dst_ext, 0), set(imm, 0), uses=MovRI
+  jmp_done -> set(target, strcmp_done), uses=Jmp
+
+  # Mismatch: return 1
+  mismatch_label -> label(strcmp_ne)
+  set_one -> set(dst_lo, 0), set(dst_ext, 0), set(imm, 1), uses=MovRI
+
+  # Done
+  done_label -> label(strcmp_done)
+
+returns: output

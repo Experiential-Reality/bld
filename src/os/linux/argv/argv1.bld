@@ -1,0 +1,25 @@
+# argv1.bld - Read argv[1] from stack into rax
+#
+# Linux program entry: argv[1] at [rsp+16]
+#   [rsp] = argc
+#   [rsp+8] = argv[0] (program name pointer)
+#   [rsp+16] = argv[1] (first arg pointer)
+#
+# Encodes: 48 8B 44 24 10  (mov rax, [rsp+16])
+#
+# ModRM: mod=01 (8-bit disp), reg=000(rax), rm=100(SIB) = 0x44
+# SIB: scale=00, index=100(none), base=100(rsp) = 0x24
+# Disp8: 0x10 (16)
+
+structure ReadArgv1
+
+D bytes: 5 [composed]
+
+B byte: rex | opcode | modrm | sib | disp
+  rex -> emit(0x48)
+  opcode -> emit(0x8B)
+  modrm -> emit(0x44)
+  sib -> emit(0x24)
+  disp -> emit(0x10)
+
+returns: output

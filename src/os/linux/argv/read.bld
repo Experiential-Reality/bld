@@ -1,0 +1,36 @@
+# read.bld - Read argv[n] from stack into rax
+#
+# Linux x86-64 program entry stack layout:
+#   [rsp]      = argc
+#   [rsp+8]    = argv[0] (program name pointer)
+#   [rsp+16]   = argv[1] (first arg pointer)
+#   [rsp+24]   = argv[2] (second arg pointer)
+#   ...
+#   [rsp+8+8*n] = argv[n]
+#
+# Input: $argv_index (0, 1, 2, ...)
+# Output: rax = pointer to argv[n] string
+#
+# Encodes: mov rax, [rsp + 8 + 8*index]
+#   48 8B 44 24 disp8  (for disp8 < 128)
+#   48 8B 84 24 disp32 (for larger displacements)
+#
+# For simplicity, uses disp8 form (argv[0] through argv[14])
+
+structure ReadArgv
+
+D bytes: 5 [composed]
+
+# Displacement = 8 + 8 * argv_index
+# argv[0] -> disp = 8
+# argv[1] -> disp = 16 (0x10)
+# argv[2] -> disp = 24 (0x18)
+
+B byte: rex | opcode | modrm | sib | disp
+  rex -> emit(0x48)
+  opcode -> emit(0x8B)
+  modrm -> emit(0x44)
+  sib -> emit(0x24)
+  disp -> emit(8 + 8 * $argv_index)
+
+returns: output

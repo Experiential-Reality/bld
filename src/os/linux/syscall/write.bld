@@ -1,0 +1,25 @@
+# syscall_write.bld - Write syscall as structure
+#
+# syscall_write(stdout, buffer, length)
+# Generates: mov rax,1; mov rdi,1; mov rsi,$buffer; mov rdx,$length; syscall
+#
+# Input: $buffer, $length in state
+# Output: x86 code bytes
+
+structure SyscallWrite
+
+D instructions: 5 [composed]
+
+B instruction: mov_rax | mov_rdi | mov_rsi | mov_rdx | do_syscall
+  # mov rax, 1 (syscall number for write)
+  mov_rax -> set(dst_lo, 0), set(dst_ext, 0), set(imm, 1), uses=x86/mov/ri
+  # mov rdi, 1 (stdout)
+  mov_rdi -> set(dst_lo, 7), set(dst_ext, 0), set(imm, 1), uses=x86/mov/ri
+  # mov rsi, buffer address
+  mov_rsi -> set(dst_lo, 6), set(dst_ext, 0), set(imm, $buffer), uses=x86/mov/ri
+  # mov rdx, length
+  mov_rdx -> set(dst_lo, 2), set(dst_ext, 0), set(imm, $length), uses=x86/mov/ri
+  # syscall
+  do_syscall -> uses=x86/system/syscall
+
+returns: output

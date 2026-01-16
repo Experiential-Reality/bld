@@ -1,0 +1,195 @@
+# BLD GitHub Markdown Emitter - traverser that outputs GitHub-flavored markdown
+# Extends markdown.bld with GitHub-specific features
+#
+# GitHub additions:
+#   - Alerts (NOTE, TIP, IMPORTANT, WARNING, CAUTION)
+#   - Mermaid diagrams for structure visualization
+#   - Collapsible sections for large structures
+#   - Task lists for todos
+#   - Syntax highlighting with language hints
+#
+# Usage: bld emit github <source.bld>
+
+structure GitHubMarkdownEmitter
+
+# Input/Output
+D input_structure: 1 [input, type=ParsedStructure]
+D output_text: N [output, type=String]
+
+# =============================================================================
+# SECTION TYPES (B) - extends base markdown
+# =============================================================================
+
+B section_type: header | alerts | diagram | drawing | boundaries | links | dimensions | cost | returns | footer
+  header -> emit_title, emit_badges, emit_toc
+  alerts -> emit_status_alert, emit_cost_alert
+  diagram -> emit_mermaid, type=flowchart
+  drawing -> emit_collapsible, title="BLD Structure", content=parse_output
+  boundaries -> emit_table, cols=[name, partitions, properties]
+  links -> emit_table, cols=[name, source, target, deps, attrs]
+  dimensions -> emit_table, cols=[name, extent, properties]
+  cost -> emit_formula
+  returns -> emit_inline_code
+  footer -> emit_generated_by, emit_links
+
+# =============================================================================
+# GITHUB ALERTS (B)
+# =============================================================================
+#
+# > [!NOTE]
+# > Useful information that users should know.
+#
+# > [!TIP]
+# > Helpful advice for doing things better.
+#
+# > [!IMPORTANT]
+# > Key information users need to know.
+#
+# > [!WARNING]
+# > Urgent info that needs immediate attention.
+#
+# > [!CAUTION]
+# > Advises about risks or negative outcomes.
+
+B alert_type: note | tip | important | warning | caution
+  note -> emit_bytes("> [!NOTE]\n> "), color=blue
+  tip -> emit_bytes("> [!TIP]\n> "), color=green
+  important -> emit_bytes("> [!IMPORTANT]\n> "), color=purple
+  warning -> emit_bytes("> [!WARNING]\n> "), color=yellow
+  caution -> emit_bytes("> [!CAUTION]\n> "), color=red
+
+# Map status to alert type
+B status_to_alert: validated | derived | exploratory | foundational | mixed
+  validated -> alert=tip, message="This structure is empirically validated."
+  derived -> alert=note, message="This structure is mathematically derived."
+  exploratory -> alert=warning, message="This structure is exploratory - not yet validated."
+  foundational -> alert=important, message="This is a foundational BLD structure."
+  mixed -> alert=note, message="Validation status varies by component."
+
+# =============================================================================
+# MERMAID DIAGRAMS (B)
+# =============================================================================
+#
+# ```mermaid
+# flowchart TD
+#     B1[Boundary] --> L1[Link]
+#     L1 --> D1[Dimension]
+# ```
+
+B diagram_type: flowchart | graph | stateDiagram
+  flowchart -> direction=TD, show_B_L_D
+  graph -> direction=LR, show_dependencies
+  stateDiagram -> show_partitions
+
+B mermaid_node: boundary_node | link_node | dimension_node | partition_node
+  boundary_node -> shape="[[ ]]", style=boundary
+  link_node -> shape="(( ))", style=link
+  dimension_node -> shape="[/ /]", style=dimension
+  partition_node -> shape="[ ]", style=partition
+
+# =============================================================================
+# COLLAPSIBLE SECTIONS (B)
+# =============================================================================
+#
+# <details>
+# <summary>Click to expand</summary>
+#
+# Content here
+#
+# </details>
+
+B collapsible: collapsed | expanded
+  collapsed -> emit_bytes("<details>\n<summary>"), emit_title, emit_bytes("</summary>\n\n")
+  expanded -> emit_bytes("<details open>\n<summary>"), emit_title, emit_bytes("</summary>\n\n")
+
+L close_collapsible: content -> output_text (deps=1, suffix="\n</details>\n")
+
+# =============================================================================
+# BADGES (B)
+# =============================================================================
+#
+# ![Status](https://img.shields.io/badge/status-validated-green)
+# ![Cost](https://img.shields.io/badge/cost-12.5-blue)
+
+B badge_type: status_badge | cost_badge | domain_badge
+  status_badge -> url="https://img.shields.io/badge/status-{status}-{color}"
+  cost_badge -> url="https://img.shields.io/badge/cost-{cost}-blue"
+  domain_badge -> url="https://img.shields.io/badge/domain-{domain}-purple"
+
+L emit_badge: badge_type -> output_text (deps=0, format="![{label}]({url})")
+
+# =============================================================================
+# TABLE OF CONTENTS (B)
+# =============================================================================
+
+B toc_entry: toc_structure | toc_boundaries | toc_links | toc_dimensions | toc_cost
+  toc_structure -> anchor="#structure", level=2
+  toc_boundaries -> anchor="#boundaries-b", level=2
+  toc_links -> anchor="#links-l", level=2
+  toc_dimensions -> anchor="#dimensions-d", level=2
+  toc_cost -> anchor="#cost", level=2
+
+L emit_toc: sections -> output_text (deps=0, format="- [{title}]({anchor})")
+
+# =============================================================================
+# FILE SPLITTING (B)
+# =============================================================================
+#
+# Split when D×L > threshold (human working memory ~4)
+# Each sub-structure with high cost becomes a separate file
+# Parent file gets `uses=` reference instead of inline content
+#
+# Cost threshold: 4 (human) or configurable
+
+B split_decision: inline | split_file
+  inline -> cost_below_threshold, emit_inline
+  split_file -> cost_above_threshold, emit_uses_reference, create_subfile
+
+B split_threshold: human | claude | custom
+  human -> threshold=4, working_memory_limit
+  claude -> threshold=100, context_optimization
+  custom -> threshold=N, user_specified
+
+L check_cost: sub_structure -> split_decision (deps=1)
+L emit_reference: sub_structure -> uses_link (deps=0, format="uses={path}")
+L create_file: sub_structure -> file_path (deps=1)
+
+D sub_structures: N [parallel, from=input_structure.uses]
+D output_files: M [parallel, created_on_split]
+
+# =============================================================================
+# LINKS - EMISSION OPERATIONS
+# =============================================================================
+
+# Main traversal
+L traverse: input_structure -> output_text (deps=1)
+
+# Section ordering (human-optimized for GitHub)
+L order: header -> alerts -> diagram -> drawing -> boundaries -> links -> dimensions -> cost -> returns -> footer (deps=1, sequential=true)
+
+# Mermaid generation
+L generate_mermaid: input_structure -> diagram (deps=1)
+L emit_mermaid_header: diagram_type -> output_text (deps=0, prefix="```mermaid\n")
+L emit_mermaid_nodes: elements -> output_text (deps=1)
+L emit_mermaid_edges: links -> output_text (deps=1)
+L emit_mermaid_footer: -> output_text (deps=0, suffix="```\n")
+
+# Badge generation
+L detect_status: input_structure.comments -> status (deps=0)
+L format_badge_url: status -> url (deps=1)
+
+# Footer
+L emit_footer: -> output_text (deps=0)
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D sections: 10 [sequential, ordered]
+D boundaries: N [parallel, from=input_structure.boundaries]
+D links: N [parallel, from=input_structure.links]
+D dimensions: N [parallel, from=input_structure.dimensions]
+D toc_entries: 5 [sequential]
+D badges: 3 [parallel]
+
+returns: output_text

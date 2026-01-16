@@ -1,0 +1,68 @@
+# BLD Lowering for AArch64 - convert BLD operations to AArch64 code
+#
+# Cross-compilation support: same BLD structure, different target.
+# The structure IS the portable representation - only lowering changes.
+#
+# Cost(lower) = B_operations + D_instructions × L_emit
+#
+# AArch64 Linux syscall convention:
+#   x8 = syscall number
+#   x0-x5 = arguments
+#   svc #0 instruction
+#   Syscall numbers: write=64, exit=93
+
+structure LoweringAArch64
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D operations: N [input, from_structure]
+D instructions: M [output, sequential]
+
+# =============================================================================
+# BOUNDARIES - Operation types that get lowered to AArch64
+# =============================================================================
+
+B operation: emit_byte | emit_u16 | emit_u32 | emit_u64 | syscall_write | syscall_exit | set_var | get_var | program_start | program_end
+
+  # syscall_write: write(fd, buf, len)
+  # mov x8, #64    ; syscall number for write
+  # mov x0, #1     ; fd = stdout
+  # mov x1, $buffer; buf (may need movz/movk for large values)
+  # mov x2, $length; len
+  # svc #0
+  syscall_write -> set(mode_instruction, mov_ri), set(rd, 8), set(imm, 64), uses=AArch64, set(mode_instruction, mov_ri), set(rd, 0), set(imm, 1), uses=AArch64, set(mode_instruction, mov_ri), set(rd, 1), set(imm, $buffer), uses=AArch64, set(mode_instruction, mov_ri), set(rd, 2), set(imm, $length), uses=AArch64, set(mode_instruction, svc), set(imm, 0), uses=AArch64
+
+  # syscall_exit: exit(code)
+  # mov x8, #93    ; syscall number for exit
+  # mov x0, $code  ; exit code
+  # svc #0
+  syscall_exit -> set(mode_instruction, mov_ri), set(rd, 8), set(imm, 93), uses=AArch64, set(mode_instruction, mov_ri), set(rd, 0), set(imm, $exit_code), uses=AArch64, set(mode_instruction, svc), set(imm, 0), uses=AArch64
+
+  # program_start: function prologue
+  program_start -> set(mode_instruction, prologue), uses=AArch64
+
+  # program_end: function epilogue
+  program_end -> set(mode_instruction, epilogue), uses=AArch64
+
+  # emit_byte: set up value in register
+  emit_byte -> set(mode_instruction, mov_ri), set(rd, 0), set(imm, $byte), uses=AArch64
+
+  # emit_u16/u32/u64: similar pattern
+  emit_u16 -> set(mode_instruction, mov_ri), set(rd, 0), set(imm, $value), uses=AArch64
+  emit_u32 -> set(mode_instruction, mov_ri), set(rd, 0), set(imm, $value), uses=AArch64
+  emit_u64 -> set(mode_instruction, mov_ri), set(rd, 0), set(imm, $value), uses=AArch64
+
+  # set_var/get_var: register operations
+  set_var -> set(mode_instruction, mov_ri), set(rd, $reg), set(imm, $value), uses=AArch64
+  get_var -> set(mode_instruction, mov_rr), set(rd, $dst), set(rm, $src), uses=AArch64
+
+# =============================================================================
+# LINKS - Lowering pipeline
+# =============================================================================
+
+L lower_all: operations -> instructions (deps=1)
+L lower_one: operation -> instruction_seq (deps=0)
+
+returns: instructions

@@ -1,0 +1,19 @@
+# argc.bld - Read argc from stack into rax
+#
+# Linux program entry: argc at [rsp]
+# Encodes: 48 8B 04 24  (mov rax, [rsp])
+#
+# ModRM: mod=00, reg=000(rax), rm=100(SIB follows) = 0x04
+# SIB: scale=00, index=100(none), base=100(rsp) = 0x24
+
+structure ReadArgc
+
+D bytes: 4 [composed]
+
+B byte: rex | opcode | modrm | sib
+  rex -> emit(0x48)
+  opcode -> emit(0x8B)
+  modrm -> emit(0x04)
+  sib -> emit(0x24)
+
+returns: output

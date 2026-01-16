@@ -1,0 +1,555 @@
+# riscv.bld - RISC-V 64-bit instruction encoding as executable BLD
+#
+# When traversed, this structure emits RISC-V machine code.
+# Implements RV64I base integer instruction set.
+#
+# Usage: traverse(RISCV, instructions=[...]) -> bytes
+#
+# RISC-V instruction formats (all 32-bit):
+#   R-type: funct7[31:25] rs2[24:20] rs1[19:15] funct3[14:12] rd[11:7] opcode[6:0]
+#   I-type: imm[31:20] rs1[19:15] funct3[14:12] rd[11:7] opcode[6:0]
+#   S-type: imm[31:25] rs2[24:20] rs1[19:15] funct3[14:12] imm[11:7] opcode[6:0]
+#   B-type: imm[12|10:5] rs2 rs1 funct3 imm[4:1|11] opcode
+#   U-type: imm[31:12] rd[11:7] opcode[6:0]
+#   J-type: imm[20|10:1|11|19:12] rd[11:7] opcode[6:0]
+#
+# Linux syscalls: a7=syscall#, a0-a5=args, ecall
+#   write: a7=64, a0=fd, a1=buf, a2=len
+#   exit:  a7=93, a0=code
+
+structure RISCV
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D instructions: N [input, sequential]
+D output: M [output, sequential]
+
+# =============================================================================
+# BOUNDARIES - Instruction dispatch
+# =============================================================================
+
+# Main instruction dispatch - each partition emits 32-bit instruction
+# RV64I base + RV64M (multiply/divide) + RV64A (atomics) + Zicsr + Zifencei
+B instruction: add | sub | and | or | xor | sll | srl | sra | slt | sltu | addw | subw | sllw | srlw | sraw | addi | andi | ori | xori | slti | sltiu | slli | srli | srai | addiw | slliw | srliw | sraiw | ld | lw | lh | lb | lwu | lhu | lbu | sd | sw | sh | sb | beq | bne | blt | bge | bltu | bgeu | jal | jalr | lui | auipc | mul | mulh | mulhsu | mulhu | div | divu | rem | remu | mulw | divw | divuw | remw | remuw | lr_w | sc_w | lr_d | sc_d | amoswap_w | amoadd_w | amoand_w | amoor_w | amoxor_w | amomax_w | amomin_w | amomaxu_w | amominu_w | amoswap_d | amoadd_d | amoand_d | amoor_d | amoxor_d | amomax_d | amomin_d | amomaxu_d | amominu_d | csrrw | csrrs | csrrc | csrrwi | csrrsi | csrrci | fence | fence_i | ecall | ebreak | nop | mv | li | ret | j | call | tail | la | lla | neg | negw | not | seqz | snez | sltz | sgtz | beqz | bnez | blez | bgez | bltz | bgtz | sext_w | zext_w | prologue | epilogue
+
+  # ===========================================================================
+  # R-type: funct7 | rs2 | rs1 | funct3 | rd | opcode
+  # ===========================================================================
+
+  # ADD rd, rs1, rs2: 0000000 rs2 rs1 000 rd 0110011
+  add -> emit_u32(0x00000033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # SUB rd, rs1, rs2: 0100000 rs2 rs1 000 rd 0110011
+  sub -> emit_u32(0x40000033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AND rd, rs1, rs2: 0000000 rs2 rs1 111 rd 0110011
+  and -> emit_u32(0x00007033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # OR rd, rs1, rs2: 0000000 rs2 rs1 110 rd 0110011
+  or -> emit_u32(0x00006033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # XOR rd, rs1, rs2: 0000000 rs2 rs1 100 rd 0110011
+  xor -> emit_u32(0x00004033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # SLL rd, rs1, rs2: 0000000 rs2 rs1 001 rd 0110011
+  sll -> emit_u32(0x00001033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # SRL rd, rs1, rs2: 0000000 rs2 rs1 101 rd 0110011
+  srl -> emit_u32(0x00005033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # SRA rd, rs1, rs2: 0100000 rs2 rs1 101 rd 0110011
+  sra -> emit_u32(0x40005033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # SLT rd, rs1, rs2: 0000000 rs2 rs1 010 rd 0110011
+  slt -> emit_u32(0x00002033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # SLTU rd, rs1, rs2: 0000000 rs2 rs1 011 rd 0110011
+  sltu -> emit_u32(0x00003033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # ===========================================================================
+  # RV64I word operations (32-bit on 64-bit)
+  # ===========================================================================
+
+  # ADDW rd, rs1, rs2: 0000000 rs2 rs1 000 rd 0111011
+  addw -> emit_u32(0x0000003B | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # SUBW rd, rs1, rs2: 0100000 rs2 rs1 000 rd 0111011
+  subw -> emit_u32(0x4000003B | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # SLLW rd, rs1, rs2: 0000000 rs2 rs1 001 rd 0111011
+  sllw -> emit_u32(0x0000103B | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # SRLW rd, rs1, rs2: 0000000 rs2 rs1 101 rd 0111011
+  srlw -> emit_u32(0x0000503B | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # SRAW rd, rs1, rs2: 0100000 rs2 rs1 101 rd 0111011
+  sraw -> emit_u32(0x4000503B | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # ===========================================================================
+  # I-type: imm[11:0] | rs1 | funct3 | rd | opcode
+  # ===========================================================================
+
+  # ADDI rd, rs1, imm: imm[11:0] rs1 000 rd 0010011
+  addi -> emit_u32(0x00000013 | ($rd << 7) | ($rs1 << 15) | (($imm & 0xFFF) << 20))
+
+  # ANDI rd, rs1, imm: imm[11:0] rs1 111 rd 0010011
+  andi -> emit_u32(0x00007013 | ($rd << 7) | ($rs1 << 15) | (($imm & 0xFFF) << 20))
+
+  # ORI rd, rs1, imm: imm[11:0] rs1 110 rd 0010011
+  ori -> emit_u32(0x00006013 | ($rd << 7) | ($rs1 << 15) | (($imm & 0xFFF) << 20))
+
+  # XORI rd, rs1, imm: imm[11:0] rs1 100 rd 0010011
+  xori -> emit_u32(0x00004013 | ($rd << 7) | ($rs1 << 15) | (($imm & 0xFFF) << 20))
+
+  # SLTI rd, rs1, imm: imm[11:0] rs1 010 rd 0010011
+  slti -> emit_u32(0x00002013 | ($rd << 7) | ($rs1 << 15) | (($imm & 0xFFF) << 20))
+
+  # SLTIU rd, rs1, imm: imm[11:0] rs1 011 rd 0010011
+  sltiu -> emit_u32(0x00003013 | ($rd << 7) | ($rs1 << 15) | (($imm & 0xFFF) << 20))
+
+  # SLLI rd, rs1, shamt: 000000 shamt rs1 001 rd 0010011
+  slli -> emit_u32(0x00001013 | ($rd << 7) | ($rs1 << 15) | (($shamt & 0x3F) << 20))
+
+  # SRLI rd, rs1, shamt: 000000 shamt rs1 101 rd 0010011
+  srli -> emit_u32(0x00005013 | ($rd << 7) | ($rs1 << 15) | (($shamt & 0x3F) << 20))
+
+  # SRAI rd, rs1, shamt: 010000 shamt rs1 101 rd 0010011
+  srai -> emit_u32(0x40005013 | ($rd << 7) | ($rs1 << 15) | (($shamt & 0x3F) << 20))
+
+  # ===========================================================================
+  # RV64I word immediate operations
+  # ===========================================================================
+
+  # ADDIW rd, rs1, imm: imm[11:0] rs1 000 rd 0011011
+  addiw -> emit_u32(0x0000001B | ($rd << 7) | ($rs1 << 15) | (($imm & 0xFFF) << 20))
+
+  # SLLIW rd, rs1, shamt: 0000000 shamt rs1 001 rd 0011011
+  slliw -> emit_u32(0x0000101B | ($rd << 7) | ($rs1 << 15) | (($shamt & 0x1F) << 20))
+
+  # SRLIW rd, rs1, shamt: 0000000 shamt rs1 101 rd 0011011
+  srliw -> emit_u32(0x0000501B | ($rd << 7) | ($rs1 << 15) | (($shamt & 0x1F) << 20))
+
+  # SRAIW rd, rs1, shamt: 0100000 shamt rs1 101 rd 0011011
+  sraiw -> emit_u32(0x4000501B | ($rd << 7) | ($rs1 << 15) | (($shamt & 0x1F) << 20))
+
+  # ===========================================================================
+  # Load instructions: imm[11:0] | rs1 | funct3 | rd | opcode (0000011)
+  # ===========================================================================
+
+  # LD rd, offset(rs1): imm[11:0] rs1 011 rd 0000011
+  ld -> emit_u32(0x00003003 | ($rd << 7) | ($rs1 << 15) | (($offset & 0xFFF) << 20))
+
+  # LW rd, offset(rs1): imm[11:0] rs1 010 rd 0000011
+  lw -> emit_u32(0x00002003 | ($rd << 7) | ($rs1 << 15) | (($offset & 0xFFF) << 20))
+
+  # LH rd, offset(rs1): imm[11:0] rs1 001 rd 0000011
+  lh -> emit_u32(0x00001003 | ($rd << 7) | ($rs1 << 15) | (($offset & 0xFFF) << 20))
+
+  # LB rd, offset(rs1): imm[11:0] rs1 000 rd 0000011
+  lb -> emit_u32(0x00000003 | ($rd << 7) | ($rs1 << 15) | (($offset & 0xFFF) << 20))
+
+  # LWU rd, offset(rs1): imm[11:0] rs1 110 rd 0000011
+  lwu -> emit_u32(0x00006003 | ($rd << 7) | ($rs1 << 15) | (($offset & 0xFFF) << 20))
+
+  # LHU rd, offset(rs1): imm[11:0] rs1 101 rd 0000011
+  lhu -> emit_u32(0x00005003 | ($rd << 7) | ($rs1 << 15) | (($offset & 0xFFF) << 20))
+
+  # LBU rd, offset(rs1): imm[11:0] rs1 100 rd 0000011
+  lbu -> emit_u32(0x00004003 | ($rd << 7) | ($rs1 << 15) | (($offset & 0xFFF) << 20))
+
+  # LDU - not in RV64I, alias for unsigned doubleword (same as ld)
+  ldu -> emit_u32(0x00003003 | ($rd << 7) | ($rs1 << 15) | (($offset & 0xFFF) << 20))
+
+  # ===========================================================================
+  # Store instructions: imm[11:5] | rs2 | rs1 | funct3 | imm[4:0] | opcode (0100011)
+  # ===========================================================================
+
+  # SD rs2, offset(rs1): imm[11:5] rs2 rs1 011 imm[4:0] 0100011
+  sd -> emit_u32(0x00003023 | (($offset & 0x1F) << 7) | ($rs1 << 15) | ($rs2 << 20) | ((($offset >> 5) & 0x7F) << 25))
+
+  # SW rs2, offset(rs1): imm[11:5] rs2 rs1 010 imm[4:0] 0100011
+  sw -> emit_u32(0x00002023 | (($offset & 0x1F) << 7) | ($rs1 << 15) | ($rs2 << 20) | ((($offset >> 5) & 0x7F) << 25))
+
+  # SH rs2, offset(rs1): imm[11:5] rs2 rs1 001 imm[4:0] 0100011
+  sh -> emit_u32(0x00001023 | (($offset & 0x1F) << 7) | ($rs1 << 15) | ($rs2 << 20) | ((($offset >> 5) & 0x7F) << 25))
+
+  # SB rs2, offset(rs1): imm[11:5] rs2 rs1 000 imm[4:0] 0100011
+  sb -> emit_u32(0x00000023 | (($offset & 0x1F) << 7) | ($rs1 << 15) | ($rs2 << 20) | ((($offset >> 5) & 0x7F) << 25))
+
+  # ===========================================================================
+  # Branch instructions: B-type
+  # ===========================================================================
+
+  # BEQ rs1, rs2, offset: imm[12|10:5] rs2 rs1 000 imm[4:1|11] 1100011
+  beq -> emit_u32(0x00000063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | ($rs1 << 15) | ($rs2 << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # BNE rs1, rs2, offset
+  bne -> emit_u32(0x00001063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | ($rs1 << 15) | ($rs2 << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # BLT rs1, rs2, offset
+  blt -> emit_u32(0x00004063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | ($rs1 << 15) | ($rs2 << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # BGE rs1, rs2, offset
+  bge -> emit_u32(0x00005063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | ($rs1 << 15) | ($rs2 << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # BLTU rs1, rs2, offset
+  bltu -> emit_u32(0x00006063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | ($rs1 << 15) | ($rs2 << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # BGEU rs1, rs2, offset
+  bgeu -> emit_u32(0x00007063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | ($rs1 << 15) | ($rs2 << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # ===========================================================================
+  # Jump instructions
+  # ===========================================================================
+
+  # JAL rd, offset: J-type imm[20|10:1|11|19:12] rd 1101111
+  jal -> emit_u32(0x0000006F | ($rd << 7) | ((($offset >> 12) & 0xFF) << 12) | ((($offset >> 11) & 0x1) << 20) | ((($offset >> 1) & 0x3FF) << 21) | ((($offset >> 20) & 0x1) << 31))
+
+  # JALR rd, rs1, offset: I-type imm[11:0] rs1 000 rd 1100111
+  jalr -> emit_u32(0x00000067 | ($rd << 7) | ($rs1 << 15) | (($offset & 0xFFF) << 20))
+
+  # ===========================================================================
+  # Upper immediate instructions
+  # ===========================================================================
+
+  # LUI rd, imm: imm[31:12] rd 0110111
+  lui -> emit_u32(0x00000037 | ($rd << 7) | (($imm & 0xFFFFF) << 12))
+
+  # AUIPC rd, imm: imm[31:12] rd 0010111
+  auipc -> emit_u32(0x00000017 | ($rd << 7) | (($imm & 0xFFFFF) << 12))
+
+  # ===========================================================================
+  # System instructions
+  # ===========================================================================
+
+  # ECALL: 000000000000 00000 000 00000 1110011
+  ecall -> emit_u32(0x00000073)
+
+  # EBREAK: 000000000001 00000 000 00000 1110011
+  ebreak -> emit_u32(0x00100073)
+
+  # ===========================================================================
+  # RV64M - Multiply/Divide extension
+  # ===========================================================================
+
+  # MUL rd, rs1, rs2: 0000001 rs2 rs1 000 rd 0110011
+  mul -> emit_u32(0x02000033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # MULH rd, rs1, rs2: 0000001 rs2 rs1 001 rd 0110011 (high bits, signed*signed)
+  mulh -> emit_u32(0x02001033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # MULHSU rd, rs1, rs2: 0000001 rs2 rs1 010 rd 0110011 (high bits, signed*unsigned)
+  mulhsu -> emit_u32(0x02002033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # MULHU rd, rs1, rs2: 0000001 rs2 rs1 011 rd 0110011 (high bits, unsigned*unsigned)
+  mulhu -> emit_u32(0x02003033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # DIV rd, rs1, rs2: 0000001 rs2 rs1 100 rd 0110011 (signed)
+  div -> emit_u32(0x02004033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # DIVU rd, rs1, rs2: 0000001 rs2 rs1 101 rd 0110011 (unsigned)
+  divu -> emit_u32(0x02005033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # REM rd, rs1, rs2: 0000001 rs2 rs1 110 rd 0110011 (signed remainder)
+  rem -> emit_u32(0x02006033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # REMU rd, rs1, rs2: 0000001 rs2 rs1 111 rd 0110011 (unsigned remainder)
+  remu -> emit_u32(0x02007033 | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # 32-bit multiply/divide on RV64
+  # MULW rd, rs1, rs2: 0000001 rs2 rs1 000 rd 0111011
+  mulw -> emit_u32(0x0200003B | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # DIVW rd, rs1, rs2: 0000001 rs2 rs1 100 rd 0111011
+  divw -> emit_u32(0x0200403B | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # DIVUW rd, rs1, rs2: 0000001 rs2 rs1 101 rd 0111011
+  divuw -> emit_u32(0x0200503B | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # REMW rd, rs1, rs2: 0000001 rs2 rs1 110 rd 0111011
+  remw -> emit_u32(0x0200603B | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # REMUW rd, rs1, rs2: 0000001 rs2 rs1 111 rd 0111011
+  remuw -> emit_u32(0x0200703B | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # ===========================================================================
+  # RV64A - Atomic extension
+  # ===========================================================================
+
+  # LR.W rd, (rs1): 00010 aq rl 00000 rs1 010 rd 0101111
+  lr_w -> emit_u32(0x1000202F | ($rd << 7) | ($rs1 << 15))
+
+  # SC.W rd, rs2, (rs1): 00011 aq rl rs2 rs1 010 rd 0101111
+  sc_w -> emit_u32(0x1800202F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # LR.D rd, (rs1): 00010 aq rl 00000 rs1 011 rd 0101111
+  lr_d -> emit_u32(0x1000302F | ($rd << 7) | ($rs1 << 15))
+
+  # SC.D rd, rs2, (rs1): 00011 aq rl rs2 rs1 011 rd 0101111
+  sc_d -> emit_u32(0x1800302F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOSWAP.W rd, rs2, (rs1): 00001 aq rl rs2 rs1 010 rd 0101111
+  amoswap_w -> emit_u32(0x0800202F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOADD.W rd, rs2, (rs1): 00000 aq rl rs2 rs1 010 rd 0101111
+  amoadd_w -> emit_u32(0x0000202F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOAND.W rd, rs2, (rs1): 01100 aq rl rs2 rs1 010 rd 0101111
+  amoand_w -> emit_u32(0x6000202F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOOR.W rd, rs2, (rs1): 01000 aq rl rs2 rs1 010 rd 0101111
+  amoor_w -> emit_u32(0x4000202F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOXOR.W rd, rs2, (rs1): 00100 aq rl rs2 rs1 010 rd 0101111
+  amoxor_w -> emit_u32(0x2000202F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOMAX.W rd, rs2, (rs1): 10100 aq rl rs2 rs1 010 rd 0101111
+  amomax_w -> emit_u32(0xA000202F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOMIN.W rd, rs2, (rs1): 10000 aq rl rs2 rs1 010 rd 0101111
+  amomin_w -> emit_u32(0x8000202F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOMAXU.W rd, rs2, (rs1): 11100 aq rl rs2 rs1 010 rd 0101111
+  amomaxu_w -> emit_u32(0xE000202F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOMINU.W rd, rs2, (rs1): 11000 aq rl rs2 rs1 010 rd 0101111
+  amominu_w -> emit_u32(0xC000202F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # 64-bit atomic operations
+  # AMOSWAP.D rd, rs2, (rs1): 00001 aq rl rs2 rs1 011 rd 0101111
+  amoswap_d -> emit_u32(0x0800302F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOADD.D rd, rs2, (rs1): 00000 aq rl rs2 rs1 011 rd 0101111
+  amoadd_d -> emit_u32(0x0000302F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOAND.D rd, rs2, (rs1): 01100 aq rl rs2 rs1 011 rd 0101111
+  amoand_d -> emit_u32(0x6000302F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOOR.D rd, rs2, (rs1): 01000 aq rl rs2 rs1 011 rd 0101111
+  amoor_d -> emit_u32(0x4000302F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOXOR.D rd, rs2, (rs1): 00100 aq rl rs2 rs1 011 rd 0101111
+  amoxor_d -> emit_u32(0x2000302F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOMAX.D rd, rs2, (rs1): 10100 aq rl rs2 rs1 011 rd 0101111
+  amomax_d -> emit_u32(0xA000302F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOMIN.D rd, rs2, (rs1): 10000 aq rl rs2 rs1 011 rd 0101111
+  amomin_d -> emit_u32(0x8000302F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOMAXU.D rd, rs2, (rs1): 11100 aq rl rs2 rs1 011 rd 0101111
+  amomaxu_d -> emit_u32(0xE000302F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # AMOMINU.D rd, rs2, (rs1): 11000 aq rl rs2 rs1 011 rd 0101111
+  amominu_d -> emit_u32(0xC000302F | ($rd << 7) | ($rs1 << 15) | ($rs2 << 20))
+
+  # ===========================================================================
+  # Zicsr - Control and Status Register instructions
+  # ===========================================================================
+
+  # CSRRW rd, csr, rs1: csr[11:0] rs1 001 rd 1110011
+  csrrw -> emit_u32(0x00001073 | ($rd << 7) | ($rs1 << 15) | (($csr & 0xFFF) << 20))
+
+  # CSRRS rd, csr, rs1: csr[11:0] rs1 010 rd 1110011
+  csrrs -> emit_u32(0x00002073 | ($rd << 7) | ($rs1 << 15) | (($csr & 0xFFF) << 20))
+
+  # CSRRC rd, csr, rs1: csr[11:0] rs1 011 rd 1110011
+  csrrc -> emit_u32(0x00003073 | ($rd << 7) | ($rs1 << 15) | (($csr & 0xFFF) << 20))
+
+  # CSRRWI rd, csr, uimm: csr[11:0] uimm 101 rd 1110011
+  csrrwi -> emit_u32(0x00005073 | ($rd << 7) | (($uimm & 0x1F) << 15) | (($csr & 0xFFF) << 20))
+
+  # CSRRSI rd, csr, uimm: csr[11:0] uimm 110 rd 1110011
+  csrrsi -> emit_u32(0x00006073 | ($rd << 7) | (($uimm & 0x1F) << 15) | (($csr & 0xFFF) << 20))
+
+  # CSRRCI rd, csr, uimm: csr[11:0] uimm 111 rd 1110011
+  csrrci -> emit_u32(0x00007073 | ($rd << 7) | (($uimm & 0x1F) << 15) | (($csr & 0xFFF) << 20))
+
+  # ===========================================================================
+  # Zifencei - Fence instructions
+  # ===========================================================================
+
+  # FENCE: 0000 pred succ 00000 000 00000 0001111
+  fence -> emit_u32(0x0FF0000F)
+
+  # FENCE.I: 0000 0000 0000 00000 001 00000 0001111
+  fence_i -> emit_u32(0x0000100F)
+
+  # ===========================================================================
+  # Pseudo-instructions (common aliases)
+  # ===========================================================================
+
+  # NOP: addi x0, x0, 0
+  nop -> emit_u32(0x00000013)
+
+  # MV rd, rs1: addi rd, rs1, 0
+  mv -> emit_u32(0x00000013 | ($rd << 7) | ($rs1 << 15))
+
+  # LI rd, imm: addi rd, x0, imm (for small immediates)
+  li -> emit_u32(0x00000013 | ($rd << 7) | (($imm & 0xFFF) << 20))
+
+  # RET: jalr x0, x1, 0
+  ret -> emit_u32(0x00008067)
+
+  # J offset: jal x0, offset
+  j -> emit_u32(0x0000006F | ((($offset >> 12) & 0xFF) << 12) | ((($offset >> 11) & 0x1) << 20) | ((($offset >> 1) & 0x3FF) << 21) | ((($offset >> 20) & 0x1) << 31))
+
+  # CALL offset: auipc x1, offset[31:12]; jalr x1, x1, offset[11:0]
+  # (simplified: jal x1, offset for near calls)
+  call -> emit_u32(0x000000EF | ((($offset >> 12) & 0xFF) << 12) | ((($offset >> 11) & 0x1) << 20) | ((($offset >> 1) & 0x3FF) << 21) | ((($offset >> 20) & 0x1) << 31))
+
+  # TAIL offset: auipc x6, offset[31:12]; jalr x0, x6, offset[11:0]
+  # (simplified: j offset for near tail calls)
+  tail -> emit_u32(0x0000006F | ((($offset >> 12) & 0xFF) << 12) | ((($offset >> 11) & 0x1) << 20) | ((($offset >> 1) & 0x3FF) << 21) | ((($offset >> 20) & 0x1) << 31))
+
+  # LA rd, symbol: auipc rd, symbol[31:12]; addi rd, rd, symbol[11:0]
+  # (for position-independent code)
+  la -> emit_u32(0x00000017 | ($rd << 7) | ((($addr >> 12) & 0xFFFFF) << 12)), emit_u32(0x00000013 | ($rd << 7) | ($rd << 15) | ((($addr & 0xFFF) << 20)))
+
+  # LLA rd, symbol: auipc rd, symbol[31:12]; addi rd, rd, symbol[11:0]
+  # (same as LA for static linking)
+  lla -> emit_u32(0x00000017 | ($rd << 7) | ((($addr >> 12) & 0xFFFFF) << 12)), emit_u32(0x00000013 | ($rd << 7) | ($rd << 15) | ((($addr & 0xFFF) << 20)))
+
+  # NEG rd, rs: sub rd, x0, rs
+  neg -> emit_u32(0x40000033 | ($rd << 7) | (0 << 15) | ($rs << 20))
+
+  # NEGW rd, rs: subw rd, x0, rs
+  negw -> emit_u32(0x4000003B | ($rd << 7) | (0 << 15) | ($rs << 20))
+
+  # NOT rd, rs: xori rd, rs, -1
+  not -> emit_u32(0xFFF04013 | ($rd << 7) | ($rs << 15))
+
+  # SEQZ rd, rs: sltiu rd, rs, 1
+  seqz -> emit_u32(0x00103013 | ($rd << 7) | ($rs << 15))
+
+  # SNEZ rd, rs: sltu rd, x0, rs
+  snez -> emit_u32(0x00003033 | ($rd << 7) | (0 << 15) | ($rs << 20))
+
+  # SLTZ rd, rs: slt rd, rs, x0
+  sltz -> emit_u32(0x00002033 | ($rd << 7) | ($rs << 15) | (0 << 20))
+
+  # SGTZ rd, rs: slt rd, x0, rs
+  sgtz -> emit_u32(0x00002033 | ($rd << 7) | (0 << 15) | ($rs << 20))
+
+  # BEQZ rs, offset: beq rs, x0, offset
+  beqz -> emit_u32(0x00000063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | ($rs << 15) | (0 << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # BNEZ rs, offset: bne rs, x0, offset
+  bnez -> emit_u32(0x00001063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | ($rs << 15) | (0 << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # BLEZ rs, offset: bge x0, rs, offset
+  blez -> emit_u32(0x00005063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | (0 << 15) | ($rs << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # BGEZ rs, offset: bge rs, x0, offset
+  bgez -> emit_u32(0x00005063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | ($rs << 15) | (0 << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # BLTZ rs, offset: blt rs, x0, offset
+  bltz -> emit_u32(0x00004063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | ($rs << 15) | (0 << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # BGTZ rs, offset: blt x0, rs, offset
+  bgtz -> emit_u32(0x00004063 | ((($offset >> 11) & 0x1) << 7) | ((($offset >> 1) & 0xF) << 8) | (0 << 15) | ($rs << 20) | ((($offset >> 5) & 0x3F) << 25) | ((($offset >> 12) & 0x1) << 31))
+
+  # SEXT.W rd, rs: addiw rd, rs, 0 (sign-extend word)
+  sext_w -> emit_u32(0x0000001B | ($rd << 7) | ($rs << 15))
+
+  # ZEXT.W rd, rs: (requires Zba, but can emulate with slli+srli)
+  # slli rd, rs, 32; srli rd, rd, 32
+  zext_w -> emit_u32(0x02001013 | ($rd << 7) | ($rs << 15)), emit_u32(0x02005013 | ($rd << 7) | ($rd << 15))
+
+  # ===========================================================================
+  # Function prologue/epilogue
+  # ===========================================================================
+
+  # Prologue: addi sp, sp, -16; sd ra, 8(sp); sd s0, 0(sp); addi s0, sp, 16
+  prologue -> emit_u32(0xFF010113), emit_u32(0x00113423), emit_u32(0x00813023), emit_u32(0x01010413)
+
+  # Epilogue: ld ra, 8(sp); ld s0, 0(sp); addi sp, sp, 16; ret
+  epilogue -> emit_u32(0x00813083), emit_u32(0x00013403), emit_u32(0x01010113), emit_u32(0x00008067)
+
+# =============================================================================
+# BOUNDARIES - Register encoding (x0-x31)
+# =============================================================================
+
+B reg_encode: x0 | x1 | x2 | x3 | x4 | x5 | x6 | x7 | x8 | x9 | x10 | x11 | x12 | x13 | x14 | x15 | x16 | x17 | x18 | x19 | x20 | x21 | x22 | x23 | x24 | x25 | x26 | x27 | x28 | x29 | x30 | x31
+  x0 -> set(reg_num, 0)
+  x1 -> set(reg_num, 1)
+  x2 -> set(reg_num, 2)
+  x3 -> set(reg_num, 3)
+  x4 -> set(reg_num, 4)
+  x5 -> set(reg_num, 5)
+  x6 -> set(reg_num, 6)
+  x7 -> set(reg_num, 7)
+  x8 -> set(reg_num, 8)
+  x9 -> set(reg_num, 9)
+  x10 -> set(reg_num, 10)
+  x11 -> set(reg_num, 11)
+  x12 -> set(reg_num, 12)
+  x13 -> set(reg_num, 13)
+  x14 -> set(reg_num, 14)
+  x15 -> set(reg_num, 15)
+  x16 -> set(reg_num, 16)
+  x17 -> set(reg_num, 17)
+  x18 -> set(reg_num, 18)
+  x19 -> set(reg_num, 19)
+  x20 -> set(reg_num, 20)
+  x21 -> set(reg_num, 21)
+  x22 -> set(reg_num, 22)
+  x23 -> set(reg_num, 23)
+  x24 -> set(reg_num, 24)
+  x25 -> set(reg_num, 25)
+  x26 -> set(reg_num, 26)
+  x27 -> set(reg_num, 27)
+  x28 -> set(reg_num, 28)
+  x29 -> set(reg_num, 29)
+  x30 -> set(reg_num, 30)
+  x31 -> set(reg_num, 31)
+
+# =============================================================================
+# BOUNDARIES - ABI register aliases
+# =============================================================================
+
+B reg_alias: zero | ra | sp | gp | tp | t0 | t1 | t2 | s0 | fp | s1 | a0 | a1 | a2 | a3 | a4 | a5 | a6 | a7 | s2 | s3 | s4 | s5 | s6 | s7 | s8 | s9 | s10 | s11 | t3 | t4 | t5 | t6
+  zero -> set(reg_num, 0)
+  ra -> set(reg_num, 1)
+  sp -> set(reg_num, 2)
+  gp -> set(reg_num, 3)
+  tp -> set(reg_num, 4)
+  t0 -> set(reg_num, 5)
+  t1 -> set(reg_num, 6)
+  t2 -> set(reg_num, 7)
+  s0 -> set(reg_num, 8)
+  fp -> set(reg_num, 8)
+  s1 -> set(reg_num, 9)
+  a0 -> set(reg_num, 10)
+  a1 -> set(reg_num, 11)
+  a2 -> set(reg_num, 12)
+  a3 -> set(reg_num, 13)
+  a4 -> set(reg_num, 14)
+  a5 -> set(reg_num, 15)
+  a6 -> set(reg_num, 16)
+  a7 -> set(reg_num, 17)
+  s2 -> set(reg_num, 18)
+  s3 -> set(reg_num, 19)
+  s4 -> set(reg_num, 20)
+  s5 -> set(reg_num, 21)
+  s6 -> set(reg_num, 22)
+  s7 -> set(reg_num, 23)
+  s8 -> set(reg_num, 24)
+  s9 -> set(reg_num, 25)
+  s10 -> set(reg_num, 26)
+  s11 -> set(reg_num, 27)
+  t3 -> set(reg_num, 28)
+  t4 -> set(reg_num, 29)
+  t5 -> set(reg_num, 30)
+  t6 -> set(reg_num, 31)
+
+# =============================================================================
+# LINKS - Encoding pipeline
+# =============================================================================
+
+L encode_all: instructions -> output (deps=1)
+L encode_one: instruction -> output (deps=1)
+
+returns: output

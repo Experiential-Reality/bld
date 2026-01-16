@@ -1,0 +1,17 @@
+# unconditional.bld - JMP (unconditional jump)
+#
+# Displacement size is structural (boundary):
+#   short → 2 bytes (opcode + rel8)
+#   near  → 5 bytes (opcode + rel32)
+#
+# Input: $disp_size (short or near), $offset or $target
+
+structure Jmp
+
+D output: M [output, sequential]
+
+B disp: short | near
+  short -> uses=arch/x86/opcodes, emit($jmp_rel8), emit($offset)
+  near -> uses=arch/x86/opcodes, emit($jmp_rel32), reloc($target)
+
+returns: output

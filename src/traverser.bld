@@ -1,0 +1,136 @@
+# traverser.bld - The BLD traverser as executable BLD
+#
+# Structure IS Computation: This structure describes AND is the traverser.
+#
+# The Pure Traverser has exactly 5 operations:
+#   1. visit(B) -> partition selection
+#   2. visit(L) -> data flow (deps order)
+#   3. visit(D) -> iteration
+#   4. uses=    -> composition (recursion)
+#   5. emit()   -> output
+#
+# Everything else is BLD structures composed via uses=.
+# Complexity moves from code to structures.
+#
+# Cost(traverse) = B_visit + D_elements × L_step
+#   B_visit = 3 (boundary, link, dimension) - invariant
+#   D_elements = N (scales with structure size)
+#   L_step = cost per element (geometric)
+#
+# Self-hosting: traverse(Traverser, input=Traverser) -> Traverser
+
+structure Traverser
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D input: N [input, sequential]       # BLD structure to traverse
+D output: M [output, sequential]     # traversal result
+
+# =============================================================================
+# BOUNDARIES - The three visit types (invariant B)
+# =============================================================================
+
+# Core dispatch: what type of BLD element are we visiting?
+B visit: boundary | link | dimension
+  boundary -> visit_boundary
+  link -> visit_link
+  dimension -> visit_dimension
+
+# =============================================================================
+# BOUNDARIES - Boundary traversal (partition selection)
+# =============================================================================
+
+B visit_boundary: select | traverse_selected
+  # Select partition based on state
+  select -> match_partition($partitions, $state)
+  # Traverse the selected partition's semantics
+  traverse_selected -> foreach($selected, execute_semantic)
+
+# =============================================================================
+# BOUNDARIES - Link traversal (data flow by deps)
+# =============================================================================
+
+B visit_link: check_deps | execute
+  # deps=0 means parallel, deps>0 means sequential
+  check_deps -> get($deps)
+  # Execute nodes in dependency order
+  execute -> when($deps == 0, parallel_visit), when($deps > 0, sequential_visit)
+
+B parallel_visit: all_at_once
+  all_at_once -> foreach($nodes, visit)
+
+B sequential_visit: one_by_one
+  one_by_one -> foreach($nodes, visit, wait_between=true)
+
+# =============================================================================
+# BOUNDARIES - Dimension traversal (iteration)
+# =============================================================================
+
+B visit_dimension: get_data | iterate
+  get_data -> get($dimension_name)
+  iterate -> foreach($data, visit)
+
+# =============================================================================
+# BOUNDARIES - Semantic execution (only 3 primitives!)
+# =============================================================================
+
+# All semantics reduce to: emit, uses, or set
+B execute_semantic: emit_op | uses_op | set_op
+  emit_op -> emit($value)           # Output a value
+  uses_op -> compose($structure)    # Compose another structure
+  set_op -> set($name, $value)      # Update state
+
+# =============================================================================
+# BOUNDARIES - Composition (uses=)
+# =============================================================================
+
+# Structure composition via uses=
+# This is where recursion happens - the D multiplies L
+B compose: push_frame | traverse | pop_frame
+  push_frame -> push_state($args)
+  traverse -> visit($structure)
+  pop_frame -> pop_state, get($result)
+
+# =============================================================================
+# LINKS - Traversal flow
+# =============================================================================
+
+# Main entry: start traversal from root
+L traverse: input -> visit -> output (deps=1)
+
+# Visit each element type
+L visit_elements: structure -> visit (deps=1)
+
+# Composition link
+L compose_structure: structure -> compose -> result (deps=1)
+
+# =============================================================================
+# PARAMETERS
+# =============================================================================
+
+P max_depth: 1000        # Recursion limit
+
+# =============================================================================
+# RETURNS
+# =============================================================================
+
+returns: output
+
+# =============================================================================
+# SELF-HOSTING NOTES
+# =============================================================================
+#
+# The bootstrap traverser (Python) only needs:
+#   - Parse BLD syntax -> structure
+#   - Visit B/L/D nodes
+#   - Execute emit(), set(), uses=
+#
+# ALL complex behavior lives in BLD structures:
+#   - modrm(...)     -> uses=ModRM
+#   - rex(...)       -> uses=REX
+#   - emit_u64(...)  -> uses=Emit with size="u64"
+#
+# Fixpoint test:
+#   bootstrap_traverser(Traverser) == generated_traverser(Traverser)

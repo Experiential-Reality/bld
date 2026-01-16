@@ -1,0 +1,16 @@
+# cmp_rax_imm.bld - CMP rax, imm32 instruction
+#
+# Special encoding for rax: 48 3D imm32
+# Input: $imm (32-bit sign-extended to 64-bit)
+# Output: 6 bytes
+
+structure CmpRaxImm
+
+D bytes: 3 [composed]
+
+B byte: rex | opcode | immediate
+  rex -> emit(0x48)
+  opcode -> emit(0x3D)
+  immediate -> set(value, $imm), uses=emit/u32
+
+returns: output

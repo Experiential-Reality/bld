@@ -1,0 +1,46 @@
+# emit.bld - Generic emit with size-based composition
+#
+# Structure IS Computation: emit() is generic. Size property determines encoding.
+#
+# Usage:
+#   set(value, 0x48), uses=Emit                          # byte (default)
+#   set(value, 0x0002), set(mode_size, "u16"), uses=Emit # 16-bit LE
+#   set(value, 0x0001), set(mode_size, "u32"), uses=Emit # 32-bit LE
+#   set(value, 0x400078), set(mode_size, "u64"), uses=Emit # 64-bit LE
+#
+# Default mode_size is "byte" (single byte emission)
+
+structure Emit
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D input: 1 [input]      # value to emit
+D output: N [output]    # bytes (1-8 depending on size)
+
+# =============================================================================
+# BOUNDARIES - Size dispatch via mode_size
+# =============================================================================
+
+# Main dispatch: select emission pattern based on mode_size state variable
+B size: byte | u16 | u32 | u64
+  # Single byte - emit low 8 bits
+  byte -> emit($value)
+
+  # 16-bit little-endian
+  u16 -> emit($value & 0xFF), emit(($value >> 8) & 0xFF)
+
+  # 32-bit little-endian
+  u32 -> emit($value & 0xFF), emit(($value >> 8) & 0xFF), emit(($value >> 16) & 0xFF), emit(($value >> 24) & 0xFF)
+
+  # 64-bit little-endian
+  u64 -> emit($value & 0xFF), emit(($value >> 8) & 0xFF), emit(($value >> 16) & 0xFF), emit(($value >> 24) & 0xFF), emit(($value >> 32) & 0xFF), emit(($value >> 40) & 0xFF), emit(($value >> 48) & 0xFF), emit(($value >> 56) & 0xFF)
+
+# =============================================================================
+# LINKS
+# =============================================================================
+
+L emit_value: input -> output (deps=1)
+
+returns: output

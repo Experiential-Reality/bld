@@ -1,0 +1,48 @@
+# entry.bld - Program entry with argc checking
+#
+# Structure IS computation: jump offsets computed from instruction sizes.
+#
+# Layout (bytes):
+#   0-3:   read_argc (4 bytes: 48 8B 04 24)
+#   4-9:   cmp rax,1 (6 bytes: 48 3D 01 00 00 00)
+#   10-15: je +5     (6 bytes: 0F 84 05 00 00 00) -> jumps to byte 21
+#   16-20: jmp +0    (5 bytes: E9 00 00 00 00)    -> jumps to byte 21
+#   21-84: show_help (syscall_write + syscall_exit)
+#
+# Total: 85 bytes
+
+structure Entry
+
+D output: M [output, sequential]
+D phases: 4 [composed]
+
+# Parameters
+P write: 1
+P exit: 60
+P syscall_num_lo: 0
+P syscall_num_ext: 0
+P arg1_lo: 7
+P arg1_ext: 0
+P arg2_lo: 6
+P arg2_ext: 0
+P arg3_lo: 2
+P arg3_ext: 0
+
+# Jump offsets computed from layout
+P je_offset: 5
+P jmp_offset: 0
+
+B phase: check_argc | dispatch | show_help | exit_handler
+  # Read argc, compare to 1, jump to show_help if equal
+  check_argc -> uses=os/linux/argv/argc, emit(0x48), emit(0x3D), emit(0x01), emit(0x00), emit(0x00), emit(0x00), emit(0x0F), emit(0x84), emit($je_offset), emit(0x00), emit(0x00), emit(0x00)
+
+  # Jump to show_help (offset 0 because show_help is right after)
+  dispatch -> emit(0xE9), emit($jmp_offset), emit(0x00), emit(0x00), emit(0x00)
+
+  # Show help: syscall_write(1, help_addr, help_len)
+  show_help -> set(dst_lo, $syscall_num_lo), set(dst_ext, $syscall_num_ext), set(imm, $write), uses=arch/x86/mov/ri, set(dst_lo, $arg1_lo), set(dst_ext, $arg1_ext), set(imm, 1), uses=arch/x86/mov/ri, set(dst_lo, $arg2_lo), set(dst_ext, $arg2_ext), set(imm, $help_addr), uses=arch/x86/mov/ri, set(dst_lo, $arg3_lo), set(dst_ext, $arg3_ext), set(imm, $help_len), uses=arch/x86/mov/ri, uses=arch/x86/syscall
+
+  # Exit with code 0
+  exit_handler -> set(dst_lo, $syscall_num_lo), set(dst_ext, $syscall_num_ext), set(imm, $exit), uses=arch/x86/mov/ri, set(dst_lo, $arg1_lo), set(dst_ext, $arg1_ext), set(imm, 0), uses=arch/x86/mov/ri, uses=arch/x86/syscall
+
+returns: output

@@ -1,0 +1,36 @@
+# dispatch.bld - Generate command dispatch code
+#
+# Generates code that:
+#   1. Reads argv[1]
+#   2. Compares to command strings
+#   3. Jumps to appropriate handler
+#
+# This is the B→code compilation: boundaries become conditional branches.
+#
+# Input: $commands (list of command names)
+# Output: x86 dispatch code
+
+structure Dispatch
+
+D commands: N [from_commands]
+D output: M [output, sequential]
+D dispatch_phases: 3 [composed]
+
+# Main dispatch generation
+B phase: read_arg | compare_commands | default_handler
+  # Read argv[1] into rax
+  read_arg -> set(argv_offset, 16), uses=ReadArgv
+
+  # For each command: compare and jump
+  compare_commands -> foreach(commands, compare_one)
+
+  # Default: fall through to help
+  default_handler -> set(target, show_help), uses=Jmp
+
+# Compare one command
+B compare_one: load_str | do_strcmp | check_jump
+  load_str -> set(dst_lo, 6), set(dst_ext, 0), set(imm, $_current_addr), uses=MovRI
+  do_strcmp -> uses=Strcmp
+  check_jump -> set(target, $_current_label), uses=JmpIfEq
+
+returns: output

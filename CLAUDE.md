@@ -24,14 +24,20 @@ D multiplies L, not B.
 
 ```
 bld/
-├── src/bld/           # Python interpreter (MINIMAL)
-│   ├── parser.py      # Parse .bld text
-│   └── traverser.py   # Execute by traversal
-├── bootstrap/         # Self-describing .bld files
+├── src/               # Self-describing .bld files (THE source of truth)
 │   ├── bld.bld        # BLD language spec (self-referential)
-│   ├── x86.bld        # x86 encoding as BLD
-│   ├── elf.bld        # ELF format as BLD
+│   ├── cli.bld        # CLI structure (build/analyze/optimize)
+│   ├── parser.bld     # Parser structure
+│   ├── traverser.bld  # Traverser structure
+│   ├── x86.bld        # x86 instruction encoding
+│   ├── aarch64.bld    # ARM64 instruction encoding
+│   ├── riscv.bld      # RISC-V instruction encoding
+│   ├── elf.bld        # ELF64 format
+│   ├── linux.bld      # Linux ABI
+│   ├── python.bld     # Python language (bidirectional)
 │   └── ...
+├── bin/               # Built binaries
+│   └── bld            # The self-hosted binary
 ├── examples/          # Example structures
 │   ├── functional/    # map, fold, filter
 │   ├── blas/          # Linear algebra

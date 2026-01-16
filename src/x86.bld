@@ -1,0 +1,128 @@
+# x86.bld - x86-64 instruction encoding with explicit byte structure
+#
+# BLD all the way down: Instructions compose bytes.
+# REX byte = 64 + W*8 + R*4 + X*2 + B (bit positions with weights)
+# ModRM = mod*64 + reg*8 + rm (fields at positions)
+
+structure X86
+
+D instructions: N [input, sequential]
+D output: M [output, sequential]
+
+# =============================================================================
+# BOUNDARIES - Instruction dispatch with explicit register classes
+# =============================================================================
+
+B instruction: mov_rr | mov_rm | mov_mr | mov_ri | mov_ri_ext | push | push_ext | pop | pop_ext | add_rr | add_ri | sub_rr | sub_ri | xor_rr | cmp_rr | cmp_ri | test_rr | call | ret | jmp | je | jne | jl | jge | jle | jg | nop | syscall | prologue | epilogue
+
+  # MOV r64, r64: REX.W 89 /r
+  # REX = 64 + 1*8 + src_ext*4 + dst_ext = 72 + src_ext*4 + dst_ext
+  mov_rr -> emit(72 + $src_ext * 4 + $dst_ext), emit(0x89), set(mod, 3), set(reg, $src_lo), set(rm, $dst_lo), uses=ModRM
+
+  # MOV r64, [r64]: REX.W 8B /r
+  mov_rm -> emit(72 + $dst_ext * 4 + $src_ext), emit(0x8B), set(mod, 0), set(reg, $dst_lo), set(rm, $src_lo), uses=ModRM
+
+  # MOV [r64], r64: REX.W 89 /r
+  mov_mr -> emit(72 + $src_ext * 4 + $dst_ext), emit(0x89), set(mod, 0), set(reg, $src_lo), set(rm, $dst_lo), uses=ModRM
+
+  # MOV r64, imm64 (standard regs): REX.W B8+rd
+  mov_ri -> emit(72), emit(184 + $dst_lo), set(value, $imm), uses=EmitU64
+
+  # MOV r64, imm64 (extended regs): REX.WB B8+rd
+  mov_ri_ext -> emit(73), emit(184 + $dst_lo), set(value, $imm), uses=EmitU64
+
+  # PUSH r64 (standard): 50+rd
+  push -> emit(80 + $reg_lo)
+
+  # PUSH r64 (extended): REX.B 50+rd
+  push_ext -> emit(65), emit(80 + $reg_lo)
+
+  # POP r64 (standard): 58+rd
+  pop -> emit(88 + $reg_lo)
+
+  # POP r64 (extended): REX.B 58+rd
+  pop_ext -> emit(65), emit(88 + $reg_lo)
+
+  # ADD r64, r64: REX.W 01 /r
+  add_rr -> emit(72 + $src_ext * 4 + $dst_ext), emit(0x01), set(mod, 3), set(reg, $src_lo), set(rm, $dst_lo), uses=ModRM
+
+  # ADD r64, imm8: REX.W 83 /0 ib
+  add_ri -> emit(72), emit(0x83), set(mod, 3), set(reg, 0), set(rm, $dst_lo), uses=ModRM, emit($imm)
+
+  # SUB r64, r64: REX.W 29 /r
+  sub_rr -> emit(72 + $src_ext * 4 + $dst_ext), emit(0x29), set(mod, 3), set(reg, $src_lo), set(rm, $dst_lo), uses=ModRM
+
+  # SUB r64, imm8: REX.W 83 /5 ib
+  sub_ri -> emit(72), emit(0x83), set(mod, 3), set(reg, 5), set(rm, $dst_lo), uses=ModRM, emit($imm)
+
+  # XOR r64, r64: REX.W 31 /r
+  xor_rr -> emit(72 + $src_ext * 4 + $dst_ext), emit(0x31), set(mod, 3), set(reg, $src_lo), set(rm, $dst_lo), uses=ModRM
+
+  # CMP r64, r64: REX.W 39 /r
+  cmp_rr -> emit(72 + $src_ext * 4 + $dst_ext), emit(0x39), set(mod, 3), set(reg, $src_lo), set(rm, $dst_lo), uses=ModRM
+
+  # CMP r64, imm8: REX.W 83 /7 ib
+  cmp_ri -> emit(72), emit(0x83), set(mod, 3), set(reg, 7), set(rm, $dst_lo), uses=ModRM, emit($imm)
+
+  # TEST r64, r64: REX.W 85 /r
+  test_rr -> emit(72 + $src_ext * 4 + $dst_ext), emit(0x85), set(mod, 3), set(reg, $src_lo), set(rm, $dst_lo), uses=ModRM
+
+  # CALL rel32: E8 cd
+  call -> emit(0xE8), reloc($target)
+
+  # RET: C3
+  ret -> emit(0xC3)
+
+  # JMP rel32: E9 cd
+  jmp -> emit(0xE9), reloc($target)
+
+  # Jcc rel32: 0F 8x cd
+  je -> emit(0x0F), emit(0x84), reloc($target)
+  jne -> emit(0x0F), emit(0x85), reloc($target)
+  jl -> emit(0x0F), emit(0x8C), reloc($target)
+  jge -> emit(0x0F), emit(0x8D), reloc($target)
+  jle -> emit(0x0F), emit(0x8E), reloc($target)
+  jg -> emit(0x0F), emit(0x8F), reloc($target)
+
+  # NOP: 90
+  nop -> emit(0x90)
+
+  # SYSCALL: 0F 05
+  syscall -> emit(0x0F), emit(0x05)
+
+  # Function prologue: push rbp; mov rbp, rsp
+  prologue -> emit(0x55), emit(0x48), emit(0x89), emit(0xE5)
+
+  # Function epilogue: pop rbp; ret
+  epilogue -> emit(0x5D), emit(0xC3)
+
+# =============================================================================
+# BOUNDARIES - Register encoding
+# =============================================================================
+
+B reg_encode: rax | rcx | rdx | rbx | rsp | rbp | rsi | rdi | r8 | r9 | r10 | r11 | r12 | r13 | r14 | r15
+  rax -> set(reg_lo, 0), set(reg_ext, 0)
+  rcx -> set(reg_lo, 1), set(reg_ext, 0)
+  rdx -> set(reg_lo, 2), set(reg_ext, 0)
+  rbx -> set(reg_lo, 3), set(reg_ext, 0)
+  rsp -> set(reg_lo, 4), set(reg_ext, 0)
+  rbp -> set(reg_lo, 5), set(reg_ext, 0)
+  rsi -> set(reg_lo, 6), set(reg_ext, 0)
+  rdi -> set(reg_lo, 7), set(reg_ext, 0)
+  r8 -> set(reg_lo, 0), set(reg_ext, 1)
+  r9 -> set(reg_lo, 1), set(reg_ext, 1)
+  r10 -> set(reg_lo, 2), set(reg_ext, 1)
+  r11 -> set(reg_lo, 3), set(reg_ext, 1)
+  r12 -> set(reg_lo, 4), set(reg_ext, 1)
+  r13 -> set(reg_lo, 5), set(reg_ext, 1)
+  r14 -> set(reg_lo, 6), set(reg_ext, 1)
+  r15 -> set(reg_lo, 7), set(reg_ext, 1)
+
+# =============================================================================
+# LINKS
+# =============================================================================
+
+L encode_all: instructions -> output (deps=1)
+L encode_one: instruction -> output (deps=1)
+
+returns: output

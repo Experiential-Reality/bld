@@ -1,0 +1,18 @@
+# zx.bld - MOVZX (move with zero-extend)
+#
+# Source size is structural (boundary):
+#   byte → MOVZX r32, r/m8 (0F B6)
+#   word → MOVZX r32, r/m16 (0F B7)
+#
+# Input: $src_size (byte or word), $dst_lo (0-7), $src_lo (0-7)
+# Output: 3 bytes (prefix + opcode + modrm)
+
+structure MovZX
+
+D bytes: 3 [composed]
+
+B src: byte | word
+  byte -> uses=arch/x86/opcodes, emit($movzx_prefix), emit($movzx_r32_rm8), set(mod, 0), set(reg, $dst_lo), set(rm, $src_lo), uses=arch/x86/modrm
+  word -> uses=arch/x86/opcodes, emit($movzx_prefix), emit($movzx_r32_rm16), set(mod, 0), set(reg, $dst_lo), set(rm, $src_lo), uses=arch/x86/modrm
+
+returns: output

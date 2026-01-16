@@ -1,0 +1,17 @@
+# if_z.bld - JZ/JE (jump if zero/equal)
+#
+# Displacement size is structural (boundary):
+#   short → 2 bytes (opcode + rel8)
+#   near  → 6 bytes (prefix + opcode + rel32)
+#
+# Input: $disp_size (short or near), $offset or $target
+
+structure JmpIfZ
+
+D output: M [output, sequential]
+
+B disp: short | near
+  short -> uses=arch/x86/opcodes, emit($jz_rel8), emit($offset)
+  near -> uses=arch/x86/opcodes, emit($jcc_prefix), emit($jz_rel32), reloc($target)
+
+returns: output

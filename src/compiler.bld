@@ -1,0 +1,29 @@
+# compiler.bld - Single-pass BLD compiler
+#
+# Structure IS Information. Size IS Structure.
+#
+# All sizes are structural - computed via size() from structure definitions.
+# No measurement needed. Single pass. The structure IS the computation.
+#
+# Binary layout: [ELF header (120)] [code (85)] [data (784)]
+# Total: 989 bytes
+#
+# Cost = B_compile + D_output × L_emit
+
+structure Compiler
+
+D output: M [output, sequential]
+D phases: 2 [composed]
+
+P base_addr: 0x400000
+
+B phase: compute_sizes | emit_binary
+  # Phase 1: Compute all structural sizes via size()
+  # Size IS D × L - emerges from structure, not declared
+  compute_sizes -> set(header_size, size(format/elf)), set(code_size, size(entry)), set(data_size, size(CLI)), set(total_size, $header_size + $code_size + $data_size), set(entry, $base_addr + $header_size), set(data_addr, $base_addr + $header_size + $code_size), set(help_addr, $data_addr), set(help_len, $data_size), set(filesz, $total_size), set(memsz, $total_size)
+
+  # Phase 2: Emit binary - single pass, no recording
+  # Trace composes: format/elf | entry | CLI
+  emit_binary -> uses=Trace
+
+returns: output

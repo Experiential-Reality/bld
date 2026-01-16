@@ -1,0 +1,14 @@
+# emit/u16.bld - Emit 16-bit value little-endian
+#
+# Input: $value
+# Output: 2 bytes
+
+structure EmitU16
+
+D bytes: 2 [composed]
+
+B byte: b0 | b1
+  b0 -> emit($value & 0xFF)
+  b1 -> emit(($value >> 8) & 0xFF)
+
+returns: output

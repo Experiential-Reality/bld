@@ -1,0 +1,50 @@
+# compile.bld - Compile BLD structure to code
+#
+# Structure IS Computation: This structure transforms another structure's
+# B/L/D into machine code.
+#
+# Input: $struct_boundaries, $struct_links, $struct_dimensions
+#        (populated by load_struct_to_state)
+#
+# Output: x86 machine code that implements the structure's behavior
+#
+# The three primitives compile to:
+#   B → conditional dispatch (compare argv, jump to handlers)
+#   L → data flow (sequences of operations)
+#   D → iteration (loops)
+
+structure Compile
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D boundaries: N [from_struct_boundaries]
+D output: M [output, sequential]
+D compile_phases: 3 [composed]
+
+# =============================================================================
+# BOUNDARIES - Compilation phases
+# =============================================================================
+
+# Main: structure → code
+B phase: emit_code | emit_data | wrap_format
+  # Phase 1: Generate code for all boundaries
+  emit_code -> foreach(struct_boundaries, compile_boundary)
+
+  # Phase 2: Emit collected strings as data
+  emit_data -> foreach(struct_strings, emit_string)
+
+  # Phase 3: Wrap in ELF format
+  wrap_format -> uses=ELF64
+
+# Compile a single boundary
+# $_current contains the boundary dict with name, partitions
+B compile_boundary: compile_dispatch | compile_emit
+  # Dispatch boundary: partitions have different semantics
+  compile_dispatch -> emit_dispatch($_current)
+
+  # Emit boundary: partitions all emit values
+  compile_emit -> emit_all($_current)
+
+returns: output

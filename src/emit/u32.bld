@@ -1,0 +1,16 @@
+# emit/u32.bld - Emit 32-bit value little-endian
+#
+# Input: $value
+# Output: 4 bytes
+
+structure EmitU32
+
+D bytes: 4 [composed]
+
+B byte: b0 | b1 | b2 | b3
+  b0 -> emit($value & 0xFF)
+  b1 -> emit(($value >> 8) & 0xFF)
+  b2 -> emit(($value >> 16) & 0xFF)
+  b3 -> emit(($value >> 24) & 0xFF)
+
+returns: output

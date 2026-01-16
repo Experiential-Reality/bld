@@ -1,0 +1,39 @@
+# trace.bld - Single-pass binary emission
+#
+# Composes: format/elf + entry + CLI
+# All sizes computed structurally via size().
+#
+# Folder structure = dependency structure:
+#   emit/   → level 0
+#   arch/   → level 1, uses emit/
+#   os/     → level 1, parameters only
+#   format/ → level 1, uses emit/
+#   (root)  → composes all
+
+structure Trace
+
+D output: M [output, sequential]
+D phases: 3 [composed]
+
+# Syscall numbers (from os/linux)
+P write: 1
+P exit: 60
+
+# Register mappings (from arch/x86/abi)
+P syscall_num_lo: 0
+P syscall_num_ext: 0
+P arg1_lo: 7
+P arg1_ext: 0
+P arg2_lo: 6
+P arg2_ext: 0
+P arg3_lo: 2
+P arg3_ext: 0
+
+P base_addr: 0x400000
+
+B compile: elf | code | data
+  elf -> uses=format/elf
+  code -> uses=entry
+  data -> uses=CLI
+
+returns: output

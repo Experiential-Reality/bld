@@ -1,0 +1,17 @@
+# rr.bld - TEST register, register
+#
+# Size is structural (boundary), not encoded in name:
+#   byte  → 2 bytes (opcode + modrm)
+#   qword → 3 bytes (rex + opcode + modrm)
+#
+# Input: $op_size (byte or qword), $dst (0-7), $src (0-7)
+
+structure TestRR
+
+D output: M [output, sequential]
+
+B size: byte | qword
+  byte -> uses=arch/x86/opcodes, emit($test_rm8_r8), set(mod, 3), set(reg, $src), set(rm, $dst), uses=arch/x86/modrm
+  qword -> uses=arch/x86/opcodes, emit($rex_w), emit($test_rm64_r64), set(mod, 3), set(reg, $src), set(rm, $dst), uses=arch/x86/modrm
+
+returns: output

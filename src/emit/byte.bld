@@ -1,0 +1,15 @@
+# emit/byte.bld - Emit single byte
+#
+# Input: $value
+# Output: 1 byte
+#
+# D size: 1 - the fundamental unit of emission
+
+structure EmitByte
+
+D size: 1 [structural]
+
+B emit: byte
+  byte -> emit($value)
+
+returns: output

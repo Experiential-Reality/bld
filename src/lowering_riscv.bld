@@ -1,0 +1,68 @@
+# BLD Lowering for RISC-V - convert BLD operations to RISC-V code
+#
+# Cross-compilation support: same BLD structure, different target.
+# The structure IS the portable representation - only lowering changes.
+#
+# Cost(lower) = B_operations + D_instructions × L_emit
+#
+# RISC-V Linux syscall convention:
+#   a7 (x17) = syscall number
+#   a0-a5 (x10-x15) = arguments
+#   ecall instruction
+#   Syscall numbers: write=64, exit=93
+
+structure LoweringRISCV
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D operations: N [input, from_structure]
+D instructions: M [output, sequential]
+
+# =============================================================================
+# BOUNDARIES - Operation types that get lowered to RISC-V
+# =============================================================================
+
+B operation: emit_byte | emit_u16 | emit_u32 | emit_u64 | syscall_write | syscall_exit | set_var | get_var | program_start | program_end
+
+  # syscall_write: write(fd, buf, len)
+  # li a7, 64      ; syscall number for write
+  # li a0, 1       ; fd = stdout
+  # li a1, $buffer ; buf
+  # li a2, $length ; len
+  # ecall
+  syscall_write -> set(mode_instruction, li), set(rd, 17), set(imm, 64), uses=RISCV, set(mode_instruction, li), set(rd, 10), set(imm, 1), uses=RISCV, set(mode_instruction, li), set(rd, 11), set(imm, $buffer), uses=RISCV, set(mode_instruction, li), set(rd, 12), set(imm, $length), uses=RISCV, set(mode_instruction, ecall), uses=RISCV
+
+  # syscall_exit: exit(code)
+  # li a7, 93      ; syscall number for exit
+  # li a0, $code   ; exit code
+  # ecall
+  syscall_exit -> set(mode_instruction, li), set(rd, 17), set(imm, 93), uses=RISCV, set(mode_instruction, li), set(rd, 10), set(imm, $exit_code), uses=RISCV, set(mode_instruction, ecall), uses=RISCV
+
+  # program_start: function prologue
+  program_start -> set(mode_instruction, prologue), uses=RISCV
+
+  # program_end: function epilogue
+  program_end -> set(mode_instruction, epilogue), uses=RISCV
+
+  # emit_byte: for now, just set up for later
+  emit_byte -> set(mode_instruction, li), set(rd, 10), set(imm, $byte), uses=RISCV
+
+  # emit_u16/u32/u64: similar pattern
+  emit_u16 -> set(mode_instruction, li), set(rd, 10), set(imm, $value), uses=RISCV
+  emit_u32 -> set(mode_instruction, li), set(rd, 10), set(imm, $value), uses=RISCV
+  emit_u64 -> set(mode_instruction, li), set(rd, 10), set(imm, $value), uses=RISCV
+
+  # set_var/get_var: register operations
+  set_var -> set(mode_instruction, li), set(rd, $reg), set(imm, $value), uses=RISCV
+  get_var -> set(mode_instruction, mv), set(rd, $dst), set(rs1, $src), uses=RISCV
+
+# =============================================================================
+# LINKS - Lowering pipeline
+# =============================================================================
+
+L lower_all: operations -> instructions (deps=1)
+L lower_one: operation -> instruction_seq (deps=0)
+
+returns: instructions

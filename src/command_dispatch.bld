@@ -1,0 +1,27 @@
+# command_dispatch.bld - Compare argv[1] to commands
+#
+# Load argv[1], compare to each command, dispatch or fall through to help.
+# Structure: check each command in sequence, jump to handler on match.
+
+structure CommandDispatch
+
+D output: M [output, sequential]
+D steps: 4 [composed]
+
+B step: load_argv1 | check_compile | check_cost | fallback_help
+
+  # Load argv[1] pointer into rdi
+  load_argv1 -> set(argv_index, 1), uses=os/linux/x86/argv/read, set(dst_lo, 7), set(dst_ext, 0), set(src_lo, 0), set(src_ext, 0), uses=arch/x86/mov/rr
+
+  # Compare to "compile" - if match, jump over remaining checks to compile_handler
+  # Skip: check_cost + fallback_help = next checks
+  check_compile -> set(dst_lo, 6), set(dst_ext, 0), set(imm, $str_compile), uses=arch/x86/mov/ri, uses=os/linux/x86/strings/strcmp, uses=arch/x86/arithmetic/test_rax, set(disp, size(check_cost) + size(arch/x86/jumps/jmp_near)), uses=arch/x86/jumps/je_near_if_eq
+
+  # Compare to "cost" - reload argv[1], compare
+  # Skip: fallback_help + compile_command = jump to cost_handler
+  check_cost -> set(argv_index, 1), uses=os/linux/x86/argv/read, set(dst_lo, 7), set(dst_ext, 0), set(src_lo, 0), set(src_ext, 0), uses=arch/x86/mov/rr, set(dst_lo, 6), set(dst_ext, 0), set(imm, $str_cost), uses=arch/x86/mov/ri, uses=os/linux/x86/strings/strcmp, uses=arch/x86/arithmetic/test_rax, set(disp, size(arch/x86/jumps/jmp_near) + size(compile_command)), uses=arch/x86/jumps/je_near_if_eq
+
+  # No match - jump over compile_command and cost_command to help_handler
+  fallback_help -> set(disp, size(compile_command) + size(cost_command)), uses=arch/x86/jumps/jmp_near
+
+returns: output

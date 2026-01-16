@@ -1,29 +1,24 @@
-# modrm.bld - ModR/M byte as Byte composition
+# modrm.bld - ModR/M byte as BLD structure
 #
-# ModRM IS a byte with 3 fields:
-#   bits 7-6: mod (2 bits, weight 64 = 2^6)
-#   bits 5-3: reg (3 bits, weight 8 = 2^3)
-#   bits 2-0: rm  (3 bits, weight 1 = 2^0)
+# ModRM IS a byte: MMRRR RRR
+#   bits 7-6: mod (MM)
+#   bits 5-3: reg (RRR)
+#   bits 2-0: rm  (RRR)
 #
-# Each field's contribution = value * 2^base_position
-#   mod at position 6: mod * 64
-#   reg at position 3: reg * 8
-#   rm at position 0:  rm * 1
-#
-# Usage:
-#   set(mod, 3), set(reg, 0), set(rm, 0), uses=ModRM  # emits 0xC0
-#   set(mod, 0), set(reg, 1), set(rm, 5), uses=ModRM  # emits 0x0D
+# Input: 8 bits packed (mod << 6 | reg << 3 | rm)
+# Output: 1 byte
 
 structure ModRM
 
-D input: 3 [input]
-D output: 1 [output]
+D input: 8 [bits]
+D output: 1 [byte]
 
-# ModRM composes Byte via field weights
-# value = mod * 64 + reg * 8 + rm
-B compose: pack_byte
-  pack_byte -> emit($mod * 64 + $reg * 8 + $rm)
+# ModRM IS a byte with field layout
+B fields: mod | reg | rm
+  mod -> bits 7-6
+  reg -> bits 5-3
+  rm -> bits 2-0
 
-L emit_modrm: input -> output (deps=1)
+L compose: input -> output (deps=1)
 
 returns: output

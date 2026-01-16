@@ -1,77 +1,24 @@
-# sib.bld - SIB (Scale-Index-Base) byte encoding as property structure
+# sib.bld - SIB byte as BLD structure
 #
-# Structure IS Computation: SIB is a property that composes bit fields.
+# SIB IS a byte: SSIIIBBB
+#   bits 7-6: scale (SS)
+#   bits 5-3: index (III)
+#   bits 2-0: base (BBB)
 #
-# SIB byte layout:
-#   Bits 7-6: scale (0=1, 1=2, 2=4, 3=8)
-#   Bits 5-3: index (register for scaling)
-#   Bits 2-0: base (base register)
-#
-# Used when ModR/M r/m = 4 (100b) and mod != 3
-# Encodes: [base + index * scale + disp]
-#
-# Usage: uses=SIB with scale=$scale, index=$index, base=$base
+# Input: 8 bits packed (scale << 6 | index << 3 | base)
+# Output: 1 byte
 
 structure SIB
 
-# =============================================================================
-# DIMENSIONS
-# =============================================================================
+D input: 8 [bits]
+D output: 1 [byte]
 
-D input: 3 [input]     # scale, index, base
-D output: 1 [output]   # single byte
+# SIB IS a byte with field layout
+B fields: scale | index | base
+  scale -> bits 7-6
+  index -> bits 5-3
+  base -> bits 2-0
 
-# =============================================================================
-# BOUNDARIES - Scale property (bits 7-6)
-# =============================================================================
-
-B scale_field: s1 | s2 | s4 | s8
-  s1 -> set(scale_bits, 0)    # *1
-  s2 -> set(scale_bits, 1)    # *2
-  s4 -> set(scale_bits, 2)    # *4
-  s8 -> set(scale_bits, 3)    # *8
-
-# =============================================================================
-# BOUNDARIES - Index register (bits 5-3)
-# =============================================================================
-
-B index_field: i0 | i1 | i2 | i3 | i4 | i5 | i6 | i7
-  i0 -> set(index_bits, 0)    # rax/r8
-  i1 -> set(index_bits, 1)    # rcx/r9
-  i2 -> set(index_bits, 2)    # rdx/r10
-  i3 -> set(index_bits, 3)    # rbx/r11
-  i4 -> set(index_bits, 4)    # none (no index)
-  i5 -> set(index_bits, 5)    # rbp/r13
-  i6 -> set(index_bits, 6)    # rsi/r14
-  i7 -> set(index_bits, 7)    # rdi/r15
-
-# =============================================================================
-# BOUNDARIES - Base register (bits 2-0)
-# =============================================================================
-
-B base_field: b0 | b1 | b2 | b3 | b4 | b5 | b6 | b7
-  b0 -> set(base_bits, 0)     # rax/r8
-  b1 -> set(base_bits, 1)     # rcx/r9
-  b2 -> set(base_bits, 2)     # rdx/r10
-  b3 -> set(base_bits, 3)     # rbx/r11
-  b4 -> set(base_bits, 4)     # rsp/r12
-  b5 -> set(base_bits, 5)     # rbp/r13 (or disp32 if mod=0)
-  b6 -> set(base_bits, 6)     # rsi/r14
-  b7 -> set(base_bits, 7)     # rdi/r15
-
-# =============================================================================
-# BOUNDARIES - Byte composition
-# =============================================================================
-
-B compose: pack_byte
-  pack_byte -> emit((scale_bits << 6) | (index_bits << 3) | base_bits)
-
-# =============================================================================
-# LINKS - Encoding flow
-# =============================================================================
-
-L encode: scale_field -> index_field -> base_field -> compose (deps=1)
-
-L emit_sib: input -> output (deps=1)
+L compose: input -> output (deps=1)
 
 returns: output

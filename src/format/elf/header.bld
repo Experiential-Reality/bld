@@ -1,0 +1,30 @@
+# format/elf/header.bld - ELF64 header
+#
+# ElfHeader IS 64 bytes:
+#   magic(4) + class(1) + data(1) + version(1) + osabi(1) + pad(8) +
+#   type(2) + machine(2) + version(4) + entry(8) + phoff(8) + shoff(8) +
+#   flags(4) + ehsize(2) + phentsize(2) + phnum(2) + shentsize(2) + shnum(2) + shstrndx(2)
+
+structure ElfHeader
+
+D output: 64 [byte]
+
+B parts: ident | type | machine | version | entry | phoff | shoff | flags | ehsize | phentsize | phnum | shentsize | shnum | shstrndx
+  ident -> format/elf/ident()
+  type -> u16(2)
+  machine -> u16(0x3E)
+  version -> u32(1)
+  entry -> u64(entry)
+  phoff -> u64(64)
+  shoff -> u64(0)
+  flags -> u32(0)
+  ehsize -> u16(64)
+  phentsize -> u16(56)
+  phnum -> u16(1)
+  shentsize -> u16(0)
+  shnum -> u16(0)
+  shstrndx -> u16(0)
+
+L compose: parts -> output (deps=1)
+
+returns: output

@@ -1,0 +1,42 @@
+# path.bld - Structure reference path
+#
+# A path IS a structure address.
+# Resolution IS composition with filesystem.
+#
+# Syntax:
+#   types/string           → types/string.bld (default structure)
+#   types/string:String    → specific structure in file
+
+structure Path
+
+# =============================================================================
+# DIMENSIONS
+# =============================================================================
+
+D segments: N [sequential]
+
+# =============================================================================
+# BOUNDARIES
+# =============================================================================
+
+# Path type: file reference or file:structure reference
+B reference: file | file_structure
+  file -> resolve_file
+  file_structure -> resolve_structure
+
+# Segment separator
+B separator: slash
+  slash -> emit("/")
+
+# =============================================================================
+# LINKS
+# =============================================================================
+
+# Resolution: path flows through filesystem to structure
+L resolve: segments -> filesystem -> structure (deps=1)
+
+# =============================================================================
+# RETURNS
+# =============================================================================
+
+returns: structure

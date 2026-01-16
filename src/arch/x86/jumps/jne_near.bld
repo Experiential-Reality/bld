@@ -1,0 +1,16 @@
+# jne_near.bld - JNE/JNZ near (rel32)
+#
+# JneNear IS: escape + opcode + disp32
+
+structure JneNear
+
+D output: 6 [byte]
+
+B parts: escape | opcode | disp
+  escape -> arch/x86/opcodes/escape
+  opcode -> arch/x86/opcodes/jcc32(ne)
+  disp -> u32(disp)
+
+L compose: parts -> output (deps=1)
+
+returns: output

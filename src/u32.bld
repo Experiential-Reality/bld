@@ -1,0 +1,15 @@
+# u32.bld - 32 bit positions
+#
+# U32 IS (32 somethings) = (4 bytes)
+# D: 32 positions (or 4 byte positions)
+# B: 0 | 1 at each position
+
+structure U32
+
+D positions: 32
+
+B bit: 0 | 1
+
+L compose: positions -> output (deps=1)
+
+returns: output

@@ -1,0 +1,15 @@
+# strcmp_match.bld - Strings are equal, return 0
+#
+# StrcmpMatch IS: set_zero + jump_done
+
+structure StrcmpMatch
+
+D output: 15 [byte]
+
+B parts: set_zero | jump_done
+  set_zero -> arch/x86/mov/ri(dst=rax, imm=0)
+  jump_done -> arch/x86/jumps/jmp_near(disp=forward_past_mismatch)
+
+L compose: parts -> output (deps=1)
+
+returns: output

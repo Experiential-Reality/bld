@@ -1,0 +1,15 @@
+# u64.bld - 64 bit positions
+#
+# U64 IS (64 somethings) = (8 bytes)
+# D: 64 positions (or 8 byte positions)
+# B: 0 | 1 at each position
+
+structure U64
+
+D positions: 64
+
+B bit: 0 | 1
+
+L compose: positions -> output (deps=1)
+
+returns: output

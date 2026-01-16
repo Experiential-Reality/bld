@@ -1,21 +1,16 @@
 # inc.bld - INC r64 instruction
 #
-# Encodes: REX.W FF /0 (inc r/m64)
-# Input: $dst_lo (0-7), $dst_ext (0-1)
-# Output: 3 bytes
-#
-# Increments 64-bit register by 1
-# Example: inc rsi -> dst=rsi(6), ext=0
-#   REX.W = 0x48 + dst_ext, FF, ModRM = mod(11) + reg(0) + rm(dst)
+# Inc IS: rex + opcode + modrm
 
 structure Inc
 
-D bytes: 3 [composed]
+D output: 3 [byte]
 
-B byte: rex | opcode | modrm
-  rex -> emit(0x48 + $dst_ext)
-  opcode -> emit(0xFF)
-  # ModRM: mod=11 (register), reg=0 (/0 encoding), rm=dst
-  modrm -> set(mod, 3), set(reg, 0), set(rm, $dst_lo), uses=arch/x86/modrm
+B parts: rex | opcode | modrm
+  rex -> rex(W=1, B=dst.ext)
+  opcode -> arch/x86/opcodes/inc_dec
+  modrm -> arch/x86/modrm(mod=3, reg=0, rm=dst.lo)
+
+L compose: parts -> output (deps=1)
 
 returns: output

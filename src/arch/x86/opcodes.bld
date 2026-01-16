@@ -1,73 +1,87 @@
-# opcodes.bld - x86 instruction opcodes
+# opcodes.bld - x86 opcodes ARE bytes
 #
-# Opcodes ARE the interface to hardware.
-# Structured here for analysis and composition.
+# Opcodes decompose by their bit structure.
+# Many opcodes partition at bit 0 for size/condition.
 
 structure Opcodes
 
-# =============================================================================
-# MOV opcodes
-# =============================================================================
-P mov_r64_imm64_base: 0xB8    # B8+rd (register in low 3 bits)
-P mov_rm64_r64: 0x89          # MOV r/m64, r64
-P mov_r64_rm64: 0x8B          # MOV r64, r/m64
+# Escape prefix (for 2-byte opcodes)
+D escape: 1 [byte]
+B escape: 0x0F
 
-# =============================================================================
-# MOVZX opcodes (zero-extend)
-# =============================================================================
-P movzx_prefix: 0x0F
-P movzx_r32_rm8: 0xB6         # MOVZX r32, r/m8
-P movzx_r32_rm16: 0xB7        # MOVZX r32, r/m16
+# SYSCALL (after 0F)
+D syscall: 1 [byte]
+B syscall: 0x05
 
-# =============================================================================
-# CMP opcodes
-# =============================================================================
-P cmp_rm8_r8: 0x38            # CMP r/m8, r8
-P cmp_rm64_r64: 0x39          # CMP r/m64, r64
-P cmp_rax_imm32: 0x3D         # CMP rax, imm32
+# MOV r64, imm64 base (B8+rd)
+D mov_ri: 1 [byte]
+B mov_ri: 0xB8
 
-# =============================================================================
-# TEST opcodes
-# =============================================================================
-P test_rm8_r8: 0x84           # TEST r/m8, r8
-P test_rm64_r64: 0x85         # TEST r/m64, r64
+# MOV mr/rm - 1000100x where x = direction (1=rm, 0=mr)
+D mov_mr: 1 [byte]
+B mov_mr: 0x89
 
-# =============================================================================
-# INC/DEC opcodes
-# =============================================================================
-P inc_rm64: 0xFF              # INC r/m64 (ModRM.reg = 0)
-P dec_rm64: 0xFF              # DEC r/m64 (ModRM.reg = 1)
+D mov_rm: 1 [byte]
+B mov_rm: 0x8B
 
-# =============================================================================
-# ADD opcodes
-# =============================================================================
-P add_rm64_imm8: 0x83         # ADD r/m64, imm8 (ModRM.reg = 0)
+# CMP - 0011100x where x = size (0=byte, 1=qword)
+D cmp: 1 [byte]
+B cmp: base | size
+  base -> 0x38
+  size -> byte | qword
+    byte -> 0
+    qword -> 1
 
-# =============================================================================
-# Jump opcodes - short (rel8)
-# =============================================================================
-P jmp_rel8: 0xEB              # JMP rel8
-P jz_rel8: 0x74               # JZ/JE rel8
-P jnz_rel8: 0x75              # JNZ/JNE rel8
+# TEST - 1000010x where x = size (0=byte, 1=qword)
+D test: 1 [byte]
+B test: base | size
+  base -> 0x84
+  size -> byte | qword
+    byte -> 0
+    qword -> 1
 
-# =============================================================================
-# Jump opcodes - near (rel32)
-# =============================================================================
-P jmp_rel32: 0xE9             # JMP rel32
-P jcc_prefix: 0x0F            # Prefix for Jcc rel32
-P jz_rel32: 0x84              # JZ/JE rel32 (after 0F)
-P jnz_rel32: 0x85             # JNZ/JNE rel32 (after 0F)
+# ADD r/m64, imm8
+D add_mi8: 1 [byte]
+B add_mi8: 0x83
 
-# =============================================================================
-# System
-# =============================================================================
-P syscall_prefix: 0x0F
-P syscall_opcode: 0x05
+# JMP rel8
+D jmp8: 1 [byte]
+B jmp8: 0xEB
 
-# =============================================================================
-# REX prefixes
-# =============================================================================
-P rex_w: 0x48                 # REX.W (64-bit operand)
-P rex_base: 0x40              # REX base (for extension bits)
+# JMP rel32
+D jmp32: 1 [byte]
+B jmp32: 0xE9
+
+# Jcc short - 0111010x where x = condition (0=equal, 1=not_equal)
+D jcc8: 1 [byte]
+B jcc8: base | cond
+  base -> 0x74
+  cond -> eq | ne
+    eq -> 0
+    ne -> 1
+
+# Jcc near (after 0F) - 1000010x where x = condition (0=equal, 1=not_equal)
+D jcc32: 1 [byte]
+B jcc32: base | cond
+  base -> 0x84
+  cond -> eq | ne
+    eq -> 0
+    ne -> 1
+
+# INC/DEC r/m64
+D inc_dec: 1 [byte]
+B inc_dec: 0xFF
+
+# CMP rax, imm32
+D cmp_rax_imm: 1 [byte]
+B cmp_rax_imm: 0x3D
+
+# MOVZX (after 0F) - 1011011x where x = size (0=byte, 1=word)
+D movzx: 1 [byte]
+B movzx: base | size
+  base -> 0xB6
+  size -> byte | word
+    byte -> 0
+    word -> 1
 
 returns: opcodes

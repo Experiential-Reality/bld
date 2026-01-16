@@ -1,19 +1,16 @@
-# mov_ri.bld - MOV r64, imm64 instruction
+# ri.bld - MOV r64, imm64 instruction
 #
-# Encodes: REX.W B8+rd imm64
-# Input: $dst_lo (0-7), $dst_ext (0-1), $imm
-# Output: 10 bytes (REX + opcode + 8-byte immediate)
+# MovRI IS: rex(1 byte) + opcode(1 byte) + immediate(8 bytes)
 
 structure MovRI
 
-D bytes: 3 [composed]
+D output: 10 [byte]
 
-B byte: rex | opcode | immediate
-  # REX.W (72) or REX.WB (73) depending on dst_ext
-  rex -> emit(72 + $dst_ext)
-  # B8+rd opcode
-  opcode -> emit(184 + $dst_lo)
-  # 64-bit immediate
-  immediate -> set(value, $imm), uses=emit/u64
+B parts: prefix | opcode | immediate
+  prefix -> rex(W=1, B=dst.ext)
+  opcode -> mov_ri_base + dst.lo
+  immediate -> imm
+
+L compose: parts -> output (deps=1)
 
 returns: output

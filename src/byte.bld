@@ -1,87 +1,15 @@
-# byte.bld - The fundamental 8-bit unit as BLD structure
+# byte.bld - 8 bit positions
 #
-# BLD all the way down: A byte IS structure.
-#
-# D: 8 bit positions (0-7)
-# B: each bit is 0 | 1
-# L: value = sum(bit[i] * 2^i) for i in 0..7
-#
-# Usage:
-#   set(bit0, 1), set(bit1, 0), ..., uses=Byte  # emits computed value
-#
-# Or with field helpers:
-#   set(bits_0, $b), set(bits_1, $x), set(bits_2, $r), set(bits_3, $w),
-#   set(bits_6, 1), uses=Byte  # REX prefix
-#
-# The weights are the shape of a byte:
-#   position 0: weight 1   (2^0)
-#   position 1: weight 2   (2^1)
-#   position 2: weight 4   (2^2)
-#   position 3: weight 8   (2^3)
-#   position 4: weight 16  (2^4)
-#   position 5: weight 32  (2^5)
-#   position 6: weight 64  (2^6)
-#   position 7: weight 128 (2^7)
+# Byte IS (8 somethings) where each something IS bit.
+# D: 8 positions
+# B: 0 | 1 at each position
 
 structure Byte
 
-# =============================================================================
-# DIMENSIONS - The shape of a byte
-# =============================================================================
+D positions: 8
 
-D bits: 8 [positions, weighted]
-D output: 1 [output]
+B bit: 0 | 1
 
-# =============================================================================
-# BOUNDARIES - Each bit position
-# =============================================================================
-
-# Individual bit values (default 0 if not set)
-B bit0: b0_0 | b0_1
-  b0_0 -> set(w0, 0)
-  b0_1 -> set(w0, 1)
-
-B bit1: b1_0 | b1_1
-  b1_0 -> set(w1, 0)
-  b1_1 -> set(w1, 2)
-
-B bit2: b2_0 | b2_1
-  b2_0 -> set(w2, 0)
-  b2_1 -> set(w2, 4)
-
-B bit3: b3_0 | b3_1
-  b3_0 -> set(w3, 0)
-  b3_1 -> set(w3, 8)
-
-B bit4: b4_0 | b4_1
-  b4_0 -> set(w4, 0)
-  b4_1 -> set(w4, 16)
-
-B bit5: b5_0 | b5_1
-  b5_0 -> set(w5, 0)
-  b5_1 -> set(w5, 32)
-
-B bit6: b6_0 | b6_1
-  b6_0 -> set(w6, 0)
-  b6_1 -> set(w6, 64)
-
-B bit7: b7_0 | b7_1
-  b7_0 -> set(w7, 0)
-  b7_1 -> set(w7, 128)
-
-# =============================================================================
-# BOUNDARIES - Emit the computed value
-# =============================================================================
-
-B emit_value: compute
-  # Sum all weighted bits: value = sum(bit[i] * 2^i)
-  # Using state variables: bits_0 through bits_7 (default 0)
-  compute -> emit($bits_0 * 1 + $bits_1 * 2 + $bits_2 * 4 + $bits_3 * 8 + $bits_4 * 16 + $bits_5 * 32 + $bits_6 * 64 + $bits_7 * 128)
-
-# =============================================================================
-# LINKS
-# =============================================================================
-
-L emit_byte: bits -> output (deps=1)
+L compose: positions -> output (deps=1)
 
 returns: output

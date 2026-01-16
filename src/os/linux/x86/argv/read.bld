@@ -1,0 +1,23 @@
+# read.bld - Read argv[n] from stack into rax
+#
+# ReadArgv IS: rex + opcode + modrm + sib + disp
+#
+# Linux x86-64 stack at entry:
+#   [rsp+8]  = argv[0]
+#   [rsp+16] = argv[1]
+#   [rsp+8+8*n] = argv[n]
+
+structure ReadArgv
+
+D output: 5 [byte]
+
+B parts: rex | opcode | modrm | sib | disp
+  rex -> rex(W=1)
+  opcode -> arch/x86/opcodes/mov_rm
+  modrm -> arch/x86/modrm(mod=1, reg=0, rm=4)
+  sib -> sib(scale=0, index=4, base=4)
+  disp -> byte(8 + 8 * argv_index)
+
+L compose: parts -> output (deps=1)
+
+returns: output

@@ -1,0 +1,17 @@
+# je_near_if_eq.bld - JE near (jump if equal)
+#
+# JeNearIfEq IS: escape + opcode + disp32
+# (same structure as je_near)
+
+structure JeNearIfEq
+
+D output: 6 [byte]
+
+B parts: escape | opcode | disp
+  escape -> arch/x86/opcodes/escape
+  opcode -> arch/x86/opcodes/jcc32(eq)
+  disp -> u32(disp)
+
+L compose: parts -> output (deps=1)
+
+returns: output

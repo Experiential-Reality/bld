@@ -1,17 +1,17 @@
-# add_ri.bld - ADD r64, imm8 instruction
+# add.bld - ADD r64, imm8 instruction
 #
-# Encodes: REX.W 83 /0 ib
-# Input: $dst_lo, $imm (8-bit)
-# Output: 4 bytes
+# Add IS: rex + opcode + modrm + imm
 
-structure AddRI
+structure Add
 
-D bytes: 4 [composed]
+D output: 4 [byte]
 
-B byte: rex | opcode | modrm | imm8
-  rex -> emit(0x48)
-  opcode -> emit(0x83)
-  modrm -> set(mod, 3), set(reg, 0), set(rm, $dst_lo), uses=x86/modrm
-  imm8 -> emit($imm)
+B parts: rex | opcode | modrm | imm
+  rex -> rex(W=1)
+  opcode -> arch/x86/opcodes/add_mi8
+  modrm -> arch/x86/modrm(mod=3, reg=0, rm=dst.lo)
+  imm -> byte(imm)
+
+L compose: parts -> output (deps=1)
 
 returns: output

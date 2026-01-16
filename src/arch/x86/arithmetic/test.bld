@@ -1,16 +1,16 @@
-# test_rr.bld - TEST r64, r64 instruction
+# test.bld - TEST r64, r64 instruction
 #
-# Encodes: REX.W 85 /r
-# Input: $src_lo, $src_ext, $dst_lo, $dst_ext
-# Output: 3 bytes
+# Test IS: rex + opcode + modrm
 
-structure TestRR
+structure Test
 
-D bytes: 3 [composed]
+D output: 3 [byte]
 
-B byte: rex | opcode | modrm
-  rex -> emit(72 + $src_ext * 4 + $dst_ext)
-  opcode -> emit(0x85)
-  modrm -> set(mod, 3), set(reg, $src_lo), set(rm, $dst_lo), uses=x86/modrm
+B parts: rex | opcode | modrm
+  rex -> rex(W=1, R=src.ext, B=dst.ext)
+  opcode -> arch/x86/opcodes/test(qword)
+  modrm -> arch/x86/modrm(mod=3, reg=src.lo, rm=dst.lo)
+
+L compose: parts -> output (deps=1)
 
 returns: output

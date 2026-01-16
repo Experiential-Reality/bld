@@ -1,27 +1,28 @@
-# rex.bld - REX prefix as Byte composition
+# rex.bld - REX prefix as BLD structure
 #
-# REX IS a byte with specific bits:
-#   bit 6 = 1 (always, REX identifier)
-#   bit 5 = 0 (always)
-#   bit 4 = 0 (always)
-#   bit 3 = W (64-bit operand size)
-#   bit 2 = R (extends ModRM.reg)
-#   bit 1 = X (extends SIB.index)
-#   bit 0 = B (extends ModRM.rm or SIB.base)
+# REX IS a byte: 0100WRXB
+#   bits 7-4: 0100 (fixed REX identifier)
+#   bit 3: W (64-bit operand size)
+#   bit 2: R (extends ModRM.reg)
+#   bit 1: X (extends SIB.index)
+#   bit 0: B (extends ModRM.rm or SIB.base)
 #
-# Usage:
-#   set(w, 1), set(r, 0), set(x, 0), set(b, 0), uses=REX  # emits 0x48
-#   set(w, 0), set(r, 0), set(x, 0), set(b, 1), uses=REX  # emits 0x41
+# Input: 4 bits (WRXB packed)
+# Output: 1 byte (0x40 | input)
+#
+# Compose: rex(0b1000) → 0x48 (REX.W)
+#          rex(0b0001) → 0x41 (REX.B)
 
 structure REX
 
-D input: 4 [input]
-D output: 1 [output]
+D input: 4 [bits]
+D output: 1 [byte]
 
-# REX composes Byte with bit assignments
-B compose: emit_rex
-  emit_rex -> set(bits_0, $b), set(bits_1, $x), set(bits_2, $r), set(bits_3, $w), set(bits_4, 0), set(bits_5, 0), set(bits_6, 1), set(bits_7, 0), uses=Byte
+# REX = 0x40 | WRXB
+B prefix: fixed | variable
+  fixed -> 0x40
+  variable -> input
 
-L emit_rex: input -> output (deps=1)
+L compose: input -> output (deps=1)
 
 returns: output

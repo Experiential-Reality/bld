@@ -1,17 +1,15 @@
 # jmp_if_eq.bld - Jump if rax == 0
 #
-# Generates: test rax, rax; je target
-# Input: $target (label name)
-# Output: x86 code
+# JmpIfEq IS: test_rax + je
 
 structure JmpIfEq
 
-D instructions: 2 [composed]
+D output: 9 [byte]
 
-B instruction: test | jump
-  # test rax, rax (sets ZF if rax == 0)
-  test -> set(src_lo, 0), set(src_ext, 0), set(dst_lo, 0), set(dst_ext, 0), uses=TestRR
-  # je target
-  jump -> uses=Je
+B parts: test | jump
+  test -> arch/x86/arithmetic/test_rax()
+  jump -> arch/x86/jumps/je_near(disp)
+
+L compose: parts -> output (deps=1)
 
 returns: output

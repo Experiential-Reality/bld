@@ -1,19 +1,16 @@
-# mov_rm.bld - MOV r64, [r64] instruction
+# rm.bld - MOV r64, [r64] instruction
 #
-# Encodes: REX.W 8B /r
-# Input: $dst_lo, $dst_ext, $src_lo, $src_ext
-# Output: 3 bytes (REX + opcode + ModRM)
+# MovRM IS: rex + opcode + modrm
 
 structure MovRM
 
-D bytes: 3 [composed]
+D output: 3 [byte]
 
-B byte: rex | opcode | modrm
-  # REX.W with R and B bits: 0x48 + dst_ext*4 + src_ext
-  rex -> emit(72 + $dst_ext * 4 + $src_ext)
-  # Opcode for MOV r64, r/m64
-  opcode -> emit(0x8B)
-  # ModRM: mod=0 (memory), reg=dst, rm=src
-  modrm -> set(mod, 0), set(reg, $dst_lo), set(rm, $src_lo), uses=x86/modrm
+B parts: rex | opcode | modrm
+  rex -> rex(W=1, R=dst.ext, B=src.ext)
+  opcode -> arch/x86/opcodes/mov_rm
+  modrm -> arch/x86/modrm(mod=0, reg=dst.lo, rm=src.lo)
+
+L compose: parts -> output (deps=1)
 
 returns: output

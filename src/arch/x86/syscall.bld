@@ -1,15 +1,15 @@
 # syscall.bld - SYSCALL instruction
 #
-# Encodes: 0F 05
-# Input: none (registers set up by caller)
-# Output: 2 bytes
+# Syscall IS: byte * 2 (0x0F 0x05)
 
 structure Syscall
 
-D bytes: 2 [composed]
+D output: 2 [byte]
 
-B byte: prefix | opcode
-  prefix -> emit(0x0F)
-  opcode -> emit(0x05)
+B parts: prefix | opcode
+  prefix -> arch/x86/opcodes/escape
+  opcode -> arch/x86/opcodes/syscall
+
+L compose: parts -> output (deps=1)
 
 returns: output

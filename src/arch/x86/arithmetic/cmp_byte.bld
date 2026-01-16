@@ -1,0 +1,15 @@
+# cmp_byte.bld - CMP r8, r8 instruction
+#
+# CmpByte IS: opcode + modrm
+
+structure CmpByte
+
+D output: 2 [byte]
+
+B parts: opcode | modrm
+  opcode -> arch/x86/opcodes/cmp(byte)
+  modrm -> arch/x86/modrm(mod=3, reg=src.lo, rm=dst.lo)
+
+L compose: parts -> output (deps=1)
+
+returns: output

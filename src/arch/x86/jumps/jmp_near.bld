@@ -1,0 +1,15 @@
+# jmp_near.bld - JMP near (rel32)
+#
+# JmpNear IS: opcode + disp32
+
+structure JmpNear
+
+D output: 5 [byte]
+
+B parts: opcode | disp
+  opcode -> arch/x86/opcodes/jmp32
+  disp -> u32(disp)
+
+L compose: parts -> output (deps=1)
+
+returns: output

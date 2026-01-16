@@ -1,16 +1,22 @@
-# je.bld - JE (jump if equal) instruction
+# je.bld - JE/JZ (jump if equal/zero)
 #
-# Encodes: 0F 84 rel32
-# Input: $target (label name for relocation)
-# Output: 6 bytes
+# Je IS structural on displacement size:
+#   short -> opcode + rel8 = 2 bytes
+#   near  -> escape + opcode + rel32 = 6 bytes
 
 structure Je
 
-D bytes: 3 [composed]
-
-B byte: prefix | opcode | rel32
-  prefix -> emit(0x0F)
-  opcode -> emit(0x84)
-  rel32 -> reloc($target)
+B disp: short | near
+  short -> D output: 2 [byte]
+    B parts: opcode | offset
+      opcode -> arch/x86/opcodes/jcc8(eq)
+      offset -> byte(offset)
+    L compose: parts -> output (deps=1)
+  near -> D output: 6 [byte]
+    B parts: escape | opcode | offset
+      escape -> arch/x86/opcodes/escape
+      opcode -> arch/x86/opcodes/jcc32(eq)
+      offset -> u32(offset)
+    L compose: parts -> output (deps=1)
 
 returns: output

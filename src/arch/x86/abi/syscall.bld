@@ -1,0 +1,7 @@
+number: arch/x86/reg/rax
+arg0: arch/x86/reg/rdi
+arg1: arch/x86/reg/rsi
+arg2: arch/x86/reg/rdx
+arg3: arch/x86/reg/r10
+arg4: arch/x86/reg/r8
+arg5: arch/x86/reg/r9

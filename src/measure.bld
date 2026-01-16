@@ -1,16 +1,3 @@
-# measure.bld - Unified measure structure
-#
-# One traversal reveals two aspects:
-#   $_pos  = byte extent (what flowed out)
-#   $_cost = B + D × L (what was visited)
-#
-# Size and Cost are not separate functions.
-# They emerge together from traversal.
-
-structure Measure
-
-B partitions: N
-D extent: M
-L correlation: deps -> output
-
-returns: output
+partitions: N
+positions: M*b
+links: K

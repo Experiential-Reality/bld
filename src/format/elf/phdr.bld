@@ -1,22 +1,8 @@
-# format/elf/phdr.bld - ELF64 program header
-#
-# ProgramHeader IS 56 bytes:
-#   type(4) + flags(4) + offset(8) + vaddr(8) + paddr(8) + filesz(8) + memsz(8) + align(8)
-
-structure ProgramHeader
-
-D output: 56 [byte]
-
-B parts: type | flags | offset | vaddr | paddr | filesz | memsz | align
-  type -> u32(1)
-  flags -> u32(5)
-  offset -> u64(0)
-  vaddr -> u64(0x400000)
-  paddr -> u64(0x400000)
-  filesz -> u64(120 + code_size)
-  memsz -> u64(120 + code_size)
-  align -> u64(0x1000)
-
-L compose: parts -> output (deps=1)
-
-returns: output
+type: u32
+flags: u32
+offset: u64
+vaddr: u64
+paddr: u64
+filesz: u64
+memsz: u64
+align: u64

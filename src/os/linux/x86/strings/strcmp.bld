@@ -1,18 +1,3 @@
-# strcmp.bld - Compare null-terminated strings
-#
-# Strcmp IS: loop + match + mismatch
-# Input: rdi = string1, rsi = string2
-# Output: rax = 0 if equal, 1 if not equal
-
-structure Strcmp
-
-D output: 60 [byte]
-
-B parts: loop | match | mismatch
-  loop -> os/linux/x86/strings/strcmp_loop()
-  match -> os/linux/x86/strings/strcmp_match()
-  mismatch -> os/linux/x86/strings/strcmp_mismatch()
-
-L compose: parts -> output (deps=1)
-
-returns: output
+loop: arch/x86/loop
+match: arch/x86/xor arch/x86/jmp
+mismatch: arch/x86/mov

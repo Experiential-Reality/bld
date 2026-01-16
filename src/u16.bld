@@ -1,15 +1,1 @@
-# u16.bld - 16 bit positions
-#
-# U16 IS (16 somethings) = (2 bytes)
-# D: 16 positions (or 2 byte positions)
-# B: 0 | 1 at each position
-
-structure U16
-
-D positions: 16
-
-B bit: 0 | 1
-
-L compose: positions -> output (deps=1)
-
-returns: output
+16*b

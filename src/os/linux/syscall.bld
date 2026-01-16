@@ -1,0 +1,9 @@
+read: 0
+write: 1
+open: 2
+close: 3
+mmap: 9
+munmap: 11
+fork: 57
+execve: 59
+exit: 60

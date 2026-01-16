@@ -1,0 +1,3 @@
+body: N*instruction
+condition: arch/x86/cmp | arch/x86/test
+back: arch/x86/jcc

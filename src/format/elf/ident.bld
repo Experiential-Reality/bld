@@ -1,20 +1,6 @@
-# format/elf/ident.bld - ELF identification bytes
-#
-# ElfIdent IS 16 bytes:
-#   magic(4) + class(1) + data(1) + version(1) + osabi(1) + pad(8)
-
-structure ElfIdent
-
-D output: 16 [byte]
-
-B parts: magic | class | data | version | osabi | pad
-  magic -> u32(0x464C457F)
-  class -> byte(2)
-  data -> byte(1)
-  version -> byte(1)
-  osabi -> byte(0)
-  pad -> u64(0)
-
-L compose: parts -> output (deps=1)
-
-returns: output
+magic: u32
+class: byte
+data: byte
+version: byte
+osabi: byte
+pad: u64

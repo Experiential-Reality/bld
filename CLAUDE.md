@@ -4,84 +4,74 @@ This repository contains the BLD (Boundary/Link/Dimension) language and interpre
 
 ## Core Principle
 
-**Structure IS computation.** The interpreter traverses BLD structures to produce output.
+**Structure IS computation.** The traverser composes BLD structures to produce output.
 
 ## The Three Primitives
 
 | Primitive | Meaning | Question |
 |-----------|---------|----------|
 | **B** (Boundary) | Partition, distinction | Where does behavior partition? |
-| **L** (Link) | Connection, relation | What connects to what? |
-| **D** (Dimension) | Repetition, extension | What repeats? |
+| **L** (Link) | Connection, composition | What connects to what? |
+| **D** (Dimension) | Repetition, positions | What repeats? |
 
-## Key Insight: D×L Scaling
+## Key Insights
 
-D multiplies L, not B.
-- Geometric properties (L) scale with dimension
+**Bit IS Planck length.** Size = 1 by definition. Indivisible.
+```
+bit:      B = 0 | 1           (size = 1)
+byte:     D positions: 8      (8 bit positions)
+u64:      D positions: 64     (64 bit positions = 8 bytes)
+kilobyte: D positions: 1024   (1024 byte positions)
+```
+
+**D multiplies L, not B.** Cost = B + D × L
 - Topological properties (B) are invariant
+- Geometric properties (L) scale with dimension
+
+**We decompose, traverser composes.**
+- Express structures as decomposed parts
+- Traverser follows paths and composes output
+
+**Lowering IS composition.**
+- No separate transformation pass
+- Compose with arch-specific structure directly
 
 ## Repository Structure
 
 ```
 bld/
-├── src/               # Self-describing .bld files (THE source of truth)
-│   ├── bld.bld        # BLD language spec (self-referential)
-│   ├── cli.bld        # CLI structure (build/analyze/optimize)
-│   ├── parser.bld     # Parser structure
-│   ├── traverser.bld  # Traverser structure
-│   ├── x86.bld        # x86 instruction encoding
-│   ├── aarch64.bld    # ARM64 instruction encoding
-│   ├── riscv.bld      # RISC-V instruction encoding
-│   ├── elf.bld        # ELF64 format
-│   ├── linux.bld      # Linux ABI
-│   ├── python.bld     # Python language (bidirectional)
-│   └── ...
-├── bin/               # Built binaries
-│   └── bld            # The self-hosted binary
-├── examples/          # Example structures
-│   ├── functional/    # map, fold, filter
-│   ├── blas/          # Linear algebra
-│   └── ai/            # Neural network ops
-└── .claude/skills/bld/  # Claude skill files
+├── src/                    # BLD structures
+│   ├── bit.bld             # Fundamental unit (Planck length)
+│   ├── byte.bld            # 8 bit positions
+│   ├── u16.bld, u32.bld, u64.bld
+│   ├── kilobyte.bld        # 1024 byte positions
+│   ├── string.bld          # Variable length bytes (UTF-8)
+│   ├── bld.bld             # BLD defining itself
+│   ├── measure.bld         # Cost = B + D × L
+│   ├── traverser.bld       # The one operation: compose
+│   ├── arch/x86/           # x86 instruction encoding
+│   │   ├── opcodes.bld     # Decomposed by bit structure
+│   │   ├── modrm.bld, rex.bld, sib.bld
+│   │   ├── arithmetic/     # test, cmp, add, inc
+│   │   ├── jumps/          # je, jne, jmp
+│   │   └── mov/            # rr, ri, rm, movzx
+│   ├── format/elf/         # ELF64 format
+│   │   ├── header.bld, ident.bld, phdr.bld
+│   └── os/linux/x86/       # Linux x86-64
+│       ├── syscall/        # exit, read, write, open, close
+│       └── strings/        # strcmp
+├── examples/               # Example structures
+└── .claude/skills/bld/     # Claude skill files
 ```
 
 ## The Interpreter
 
-The Python interpreter is MINIMAL. It only implements:
+The Python interpreter (`bld-py/`) is bootstrap. It implements:
 
 1. **Parse** - .bld text → structure
-2. **Traverse** - Visit B/L/D, execute semantics
-3. **Primitives** - emit_byte, set, get, modrm, rex, etc.
+2. **Traverse** - Visit B/L/D, compose output
 
-Everything else (x86 encoding, ELF format, etc.) is written IN BLD and executed by the interpreter.
-
-## Semantic Primitives
-
-The interpreter understands these primitive operations:
-
-| Primitive | Purpose |
-|-----------|---------|
-| `emit_byte(x)` | Emit single byte |
-| `emit_bytes(...)` | Emit multiple bytes |
-| `emit_u16/u32/u64(x)` | Emit little-endian integer |
-| `set(name, val)` | Set state variable |
-| `get(name)` | Get state variable |
-| `label(name)` | Define label at current position |
-| `reloc(name)` | Emit relocation placeholder |
-| `modrm(mod, reg, rm)` | Emit ModR/M byte |
-| `rex(w, r, x, b)` | Emit REX prefix |
-
-## Alignment Cost
-
-```
-Cost = B_cost + D × L_cost
-```
-
-When structures align, cost is minimized.
-
-## The /bld Skill
-
-A `/bld` skill is available in `.claude/skills/bld/` with domain-specific guides.
+Size comes from D positions. No variables, no emit primitives.
 
 ## Remember
 

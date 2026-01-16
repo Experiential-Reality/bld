@@ -1,18 +1,3 @@
-# format/elf.bld - ELF64 format
-#
-# ELF64 IS: header + program_headers + sections
-# ElfHeader IS 64 bytes
-# ProgramHeader IS 56 bytes
-
-structure ELF64
-
-D output: 120 + code_size [byte]
-
-B parts: header | phdr | code
-  header -> format/elf/header(entry)
-  phdr -> format/elf/phdr(code_size)
-  code -> code
-
-L compose: parts -> output (deps=1)
-
-returns: output
+header: format/elf/header
+phdr: format/elf/phdr
+code: N*byte

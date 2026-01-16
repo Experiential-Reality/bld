@@ -1,15 +1,1 @@
-# byte.bld - 8 bit positions
-#
-# Byte IS (8 somethings) where each something IS bit.
-# D: 8 positions
-# B: 0 | 1 at each position
-
-structure Byte
-
-D positions: 8
-
-B bit: 0 | 1
-
-L compose: positions -> output (deps=1)
-
-returns: output
+8*b

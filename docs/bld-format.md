@@ -1,56 +1,104 @@
-# BLD File Format
+# BLD Format Rules
 
 Canonical reference for `.bld` file formatting.
 
-## File Extension
+## The Three Primitives
 
-`.bld`
+| Primitive | Meaning | Operator |
+|-----------|---------|----------|
+| **B** (Boundary) | Partition, distinction | newline (listing) |
+| **L** (Link) | Connection, composition | `/` (path) |
+| **D** (Dimension) | Repetition, scaling | `*` (multiplication) |
 
-## Structure
+## The Three Questions
 
-- One structure per file
-- File name = structure name
-- Empty file = leaf (path IS value)
+Before creating or modifying any BLD file, ask:
+
+1. **Where does it partition?** (B) - What distinct parts exist?
+2. **What connects?** (L) - What links to what?
+3. **What repeats?** (D) - What pattern scales?
+
+If you can't decompose further with these questions, you've reached the Planck level.
 
 ## Syntax Elements
 
 | Element | Syntax | Example |
 |---------|--------|---------|
-| Path/Link | `/` | `arch/x86/mov` |
-| Dimension | `*` | `8*b` |
-| Range | `..` | `char/a..z` |
-| Field | `:` | `opcode: arch/x86/opcode/mov` |
-| Alternative | `\|` | `0 \| 1` |
 | Partition | newline | each line is a partition |
+| Link/Path | `/` | `arch/x86/mov` |
+| Dimension | `*` | `8*b` |
+| Range | `..` | `0..1` |
+| Field | `:` | `W: b` |
+| Alternative | `\|` | `a \| b \| c` |
+| Constant | value | `0x05`, `60` |
 
-## Formatting Rules
+## File Structure
+
+- One structure per file
+- File name = structure name
+- Empty file = leaf (path IS value)
+- Relative paths preferred (traverser resolves)
+
+## Sequential vs Sparse
+
+**Sequential (position = value):** Just list partitions
+```
+# jcc.bld - conditions 0-15, all defined
+o
+no
+b
+ae
+...
+```
+
+**Sparse (gaps in values):** Use constants
+```
+# syscall.bld - not all numbers defined
+read: 0
+write: 1
+exit: 60
+```
+
+## Constants
+
+Constants that can't decompose further ARE structure:
+- `0..1` - bit (indivisible Planck)
+- `0x05` - Intel's syscall opcode
+- `60` - Linux's exit syscall number
+
+Ask: Can the 3 questions break this down further? If no, it's a valid constant.
+
+## What IS Structure
+
+- Partitions (B) - what distinct things exist
+- Dimensions (D) - how things scale/repeat
+- Composition (L) - how things connect
+
+## What is NOT Structure
+
+- **Traversal concepts** - input, output, immediate, direction
+- **Computed values** - traverser calculates these
+- **Semantic names** - arg0, number, fd (use position instead)
+- **IO** - doesn't exist, only structure exists
+
+## Key Principles
+
+1. **Structure only** - no traversal in .bld files
+2. **Position = value** for sequential data
+3. **Constants** for sparse/Planck data
+4. **Empty files** are valid leaves
+5. **Relative paths** - traverser resolves
+6. **Traverser IS compose** - it has no other structure
+7. **IO doesn't exist** - there is only structure
+
+## Formatting
 
 - No trailing whitespace
 - Single newline at end of file
 - No blank lines between partitions
-- Indentation: none (flat structure)
-
-## Naming
-
-- Lowercase
-- Underscores for multi-word (`mod_rm.bld`)
-- Or decompose into path (`mod/rm.bld`)
-
-## What NOT to Include
-
-- Traversal concepts (immediate, input, output)
-- Computed values (traverser calculates these)
-- Comments explaining traversal flow
-- Boilerplate or declarations
-
-## Constants Are OK
-
-Constants that can't decompose further ARE structure:
-- `0..1` - bit (indivisible)
-- `0x05` - Intel's syscall opcode (Intel's definition)
-- `60` - Linux's exit syscall (Linux's definition)
-
-These are the Planck level of their domain. If you can't apply the 3 questions to break it down further, it's a valid constant.
+- No indentation (flat structure)
+- Lowercase names
+- Decompose multi-word into paths (`mod/rm` not `mod_rm`)
 
 ## Examples
 
@@ -73,41 +121,38 @@ B: b
 ```
 
 ```
-# jcc.bld - partitions (position = value)
-o
-no
-b
-ae
-e
-ne
-be
-a
-s
-ns
-p
-np
-l
-ge
-le
-g
+# syscall.bld - ABI register sequence (position = arg number)
+rax
+rdi
+rsi
+rdx
+r10
+r8
+r9
 ```
 
 ```
-# mov.bld - composition
-prefix: arch/x86/rex
-opcode: arch/x86/opcode/mov
-modrm: arch/x86/modrm
+# mov.bld - sparse opcode constants
+ri: 0xB8
+rm: 0x8B
+mr: 0x89
 ```
 
-## The Principle
+```
+# exit.bld - instruction sequence
+mov
+xor
+syscall
+```
 
-**Structure = B + D**
-- B: What partitions exist (listing)
-- D: What math applies (N*type)
+## The Cost Formula
 
-**Traversal = L + flow**
-- L: Path through structure
-- Flow: Input/output during traversal
+```
+Cost = B + D × L
+```
 
-If a file describes WHERE values come from or WHAT bytes to emit, that's traversal.
-If a file describes WHAT exists and HOW MUCH, that's structure.
+- B = partitions (boundaries)
+- D = dimension (scaling)
+- L = links (composition)
+
+Structure IS this formula. The traverser computes through it.

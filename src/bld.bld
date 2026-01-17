@@ -1,14 +1,27 @@
-field: identifier colon type
-repetition: number * type
-leaf: empty
+partition
+dimension
+link
+range
+field
+constant
+
+partition: identifier | sequence
+dimension: number * type
+link: identifier N*slash/identifier
+range: value .. value
+field: identifier : type
+constant: number | hex
 
 identifier: letter N*alphanumeric
 number: N*digit
-type: identifier | path
-path: identifier N*slash_identifier
 hex: 0x N*hexdigit
+sequence: N*partition
 
 letter: a..z | A..Z | _
 digit: 0..9
 alphanumeric: letter | digit
 hexdigit: digit | a..f | A..F
+slash: /
+colon: :
+star: *
+dot: .

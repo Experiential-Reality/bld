@@ -1,3 +1,3 @@
-number: arch/x86/mov
-fd: arch/x86/mov
-call: arch/x86/syscall
+mov
+mov
+syscall

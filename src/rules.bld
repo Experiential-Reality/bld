@@ -1,0 +1,23 @@
+primitive
+question
+principle
+
+primitive: B | L | D
+B: partition
+L: link
+D: dimension
+
+question: partition | connect | repeat
+partition: where
+connect: what
+repeat: what
+
+principle: structure | sequential | sparse | constant | leaf | relative | traverse
+
+structure: B | D
+sequential: position
+sparse: constant
+constant: planck
+leaf: empty
+relative: path
+traverse: compose

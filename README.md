@@ -206,6 +206,29 @@ The traverser composes by walking the structure. No special emit primitives need
 
 ---
 
+## Self-Hosted
+
+BLD is fully self-hosted. The compiler, traverser, and all tooling are implemented in BLD itself:
+
+```
+src/bld.bld        — BLD syntax defined in BLD
+src/traverser.bld  — The traverser defined in BLD
+src/compose.bld    — Composition rules in BLD
+```
+
+Use [bld-py](https://github.com/Experiential-Reality/bld-py) to bootstrap. The Python interpreter implements the minimal traversal needed to compile BLD from .bld files, producing a native executable that no longer needs Python.
+
+```bash
+# Bootstrap: Python interprets BLD to produce native BLD
+bld-py src/program/cli.bld > bld
+chmod +x bld
+
+# Now BLD compiles itself
+./bld src/program/cli.bld > bld2
+```
+
+---
+
 ## Installation
 
 ```bash

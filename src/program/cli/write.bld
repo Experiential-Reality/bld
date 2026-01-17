@@ -1,0 +1,4 @@
+fd: 1
+buf: 0x402000
+len: count
+syscall: os/linux/syscall/write

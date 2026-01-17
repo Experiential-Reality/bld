@@ -1,0 +1,17 @@
+# BLD CLI - Self-hosting compose
+#
+# Entry: _start
+#   get argv[1]
+#   call compose(argv[1])
+#   exit(0)
+#
+# compose(path):
+#   open(path + ".bld")
+#   read into buffer
+#   for each line:
+#     classify -> dispatch
+#   close
+#   return
+
+format/elf/cli
+program/cli/code

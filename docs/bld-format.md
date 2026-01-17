@@ -83,13 +83,30 @@ Ask: Can the 3 questions break this down further? If no, it's a valid constant.
 
 ## Key Principles
 
-1. **Structure only** - no traversal in .bld files
-2. **Position = value** for sequential data
-3. **Constants** for sparse/Planck data
-4. **Empty files** are valid leaves
-5. **Relative paths** - traverser resolves
-6. **Traverser IS compose** - it has no other structure
-7. **IO doesn't exist** - there is only structure
+1. **D = file** - a file IS a dimension containing boundaries
+2. **B = lines** - boundaries partition within the file
+3. **L = values** - links connect boundaries to paths/constants
+4. **Position = value** for sequential data
+5. **Constants** for sparse/Planck data
+6. **Empty files** are valid leaves
+7. **Traverser IS compose** - it has no other structure
+8. **Irreducible names** - if a filename can be simplified, there's hidden structure
+
+## Irreducibility
+
+A filename is correct when it cannot be reduced.
+
+**Test**: Can any part of the path be removed or combined?
+- If yes → hidden structure, make it explicit
+- If no → correct
+
+**Example**: `arch/x86/opcode/mov.bld`
+- `arch` - necessary (vs format, program, os)
+- `x86` - necessary (vs arm, riscv)
+- `opcode` - necessary (vs modrm, rex, abi)
+- `mov` - necessary (vs xor, cmp, jmp)
+
+Each component partitions a different dimension.
 
 ## Formatting
 
@@ -156,3 +173,72 @@ Cost = B + D × L
 - L = links (composition)
 
 Structure IS this formula. The traverser computes through it.
+
+## Values Only Exist at Traversal Time
+
+**Critical principle**: BLD files define STRUCTURE, not values.
+
+- **Constants** are irreducible: `0x7F` (ELF magic), `0x3E` (x86-64 machine), `60` (exit syscall)
+- **Structure** defines shape: `entry: u64`, `filesz: u64`
+- **Values** are computed by the traverser during composition
+
+Example:
+```
+# header.bld - STRUCTURE
+entry: u64        # "entry is a u64" - shape only
+filesz: u64       # "filesz is a u64" - shape only
+```
+
+The traverser computes:
+- `entry` = load_address + header_size
+- `filesz` = header_size + code_size
+
+Values don't exist in .bld files. They emerge during traversal.
+
+## Traverser Independence
+
+BLD expresses STRUCTURE. Different traversers produce different outputs from the same structure.
+
+Example - the CLI algorithm:
+```
+# program/cli/start.bld
+check: os/entry/argc
+compare: 2
+branch/lt: program/cli/error/noarg
+load: os/entry/argv/1
+save: r12
+```
+
+This is architecture-agnostic. The structure IS the algorithm.
+
+**x86 traverser** → machine code bytes
+**markdown traverser** → documentation
+**ARM traverser** → ARM machine code
+**analysis traverser** → cost metrics
+
+The structure doesn't change. Only the traverser changes.
+
+## Crystallized Form
+
+A crystallized file contains the OUTPUT of a specific traversal, stored as BLD:
+```
+# program/cli/code.bld - x86 crystallized
+0x48
+0x8B
+0x04
+0x24
+...
+```
+
+These bytes ARE constants - the result of x86 traversal. The crystallized form enables bootstrapping: the Python traverser composes crystallized bytes directly.
+
+## Structural vs Crystallized
+
+| Aspect | Structural | Crystallized |
+|--------|------------|--------------|
+| Content | Operations, links | Raw bytes |
+| Traverser | Architecture-specific | Generic (just emit) |
+| Portability | Yes | No (arch-specific) |
+| Use | Source of truth | Bootstrap artifact |
+
+The structural form IS the program. The crystallized form is one traversal's output.

@@ -1,0 +1,5 @@
+check: os/entry/argc
+compare: 2
+branch/lt: program/cli/error/noarg
+load: os/entry/argv/1
+save: r12

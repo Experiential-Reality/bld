@@ -1,0 +1,12 @@
+# Test: mov rax, [rsp] + xor rsi, rsi + syscall
+# mov rax, [rsp]
+arch/x86/rex/w
+arch/x86/opcode/mov/rm
+arch/x86/modrm/sib/rax
+arch/x86/sib/rsp
+# xor rsi, rsi
+arch/x86/rex/w
+arch/x86/opcode/xor/mr
+arch/x86/modrm/reg/rsi/rsi
+# syscall
+arch/x86/syscall

@@ -1,0 +1,18 @@
+# close_file: close(fd)
+
+# mov rax, 3 (sys_close)
+arch/x86/rex/w
+arch/x86/opcode/mov/ri32
+arch/x86/modrm/ri/rax
+0x03
+0x00
+0x00
+0x00
+
+# mov rdi, r13 (fd)
+arch/x86/rex/wb
+arch/x86/opcode/mov/rm
+arch/x86/modrm/reg/rdi/r13
+
+# syscall
+arch/x86/syscall

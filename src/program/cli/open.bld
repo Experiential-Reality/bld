@@ -1,0 +1,6 @@
+path: r12
+flags: 0
+mode: 0
+syscall: os/linux/syscall/open
+branch/s: program/cli/error/open
+save: r13

@@ -1,0 +1,77 @@
+# Compose - The One Operation
+#
+# This file defines the crystallized BLD format.
+# Python implements these rules in ~50 lines.
+#
+# Crystallized BLD is the minimal format:
+# - No B/L/D declarations needed
+# - Constants emit directly
+# - Paths compose recursively
+# - Dimensions are metadata only
+
+# =============================================================================
+# LINE CLASSIFICATION
+# =============================================================================
+
+B line: empty | hex | decimal | field | dimension | path
+
+# empty: skip (comments and blank lines)
+# pattern: line.strip() == '' OR startswith('#')
+empty
+#
+
+# hex: emit single byte
+# pattern: startswith('0x')
+# action: output.append(int(line, 16))
+hex
+0x
+
+# decimal: emit single byte
+# pattern: line.isdigit()
+# action: output.append(int(line))
+decimal
+0..255
+
+# field: name: value -> compose value
+# pattern: ':' in line AND NOT startswith('0x')
+# action: parse value, then hex|decimal|path dispatch
+field
+:
+
+# dimension: skip (metadata only)
+# pattern: '*' in line
+# example: 64*b (64 bits), 8*byte (8 bytes)
+dimension
+*
+
+# path: compose recursively
+# pattern: '/' in line OR alphanumeric identifier
+# action: output.extend(compose(line))
+path
+/
+
+# =============================================================================
+# THE RECURSIVE OPERATION
+# =============================================================================
+
+L compose: path -> bytes
+
+# Algorithm:
+#   load file at path
+#   for each line:
+#     classify line
+#     dispatch to action
+#   return accumulated bytes
+
+# =============================================================================
+# TODO: EXTENSIONS
+# =============================================================================
+
+# Multi-byte emit (not yet implemented):
+#   u16: 0x1234      -> emit 2 bytes little-endian
+#   u32: 0x12345678  -> emit 4 bytes little-endian
+#   u64: 0x...       -> emit 8 bytes little-endian
+
+# Parametric composition (not yet implemented):
+#   path/to/template $arg1 $arg2
+#   Template file uses $arg1, $arg2 as substitutions

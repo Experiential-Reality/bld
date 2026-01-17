@@ -1,0 +1,14 @@
+load: byte
+  from: ptr
+branch/z: program/cli/write
+
+classify
+  space: skip
+  tab: skip
+  newline: next
+  hash: skip/line
+  0x: hex
+  digit: decimal
+
+hex: program/cli/parse/hex
+decimal: program/cli/parse/decimal

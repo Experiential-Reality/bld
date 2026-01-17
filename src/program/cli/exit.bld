@@ -1,0 +1,2 @@
+code: 0
+syscall: os/linux/syscall/exit

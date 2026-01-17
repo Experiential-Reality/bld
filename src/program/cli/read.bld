@@ -1,0 +1,4 @@
+fd: r13
+buf: 0x401000
+len: 4096
+syscall: os/linux/syscall/read

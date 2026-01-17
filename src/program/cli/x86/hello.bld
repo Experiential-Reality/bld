@@ -1,0 +1,75 @@
+# Hello world - minimal test
+
+# mov rax, 1 (sys_write)
+arch/x86/rex/w
+arch/x86/opcode/mov/ri32
+arch/x86/modrm/ri/rax
+0x01
+0x00
+0x00
+0x00
+
+# mov rdi, 1 (stdout)
+arch/x86/rex/w
+arch/x86/opcode/mov/ri32
+arch/x86/modrm/ri/rdi
+0x01
+0x00
+0x00
+0x00
+
+# lea rsi, [rip+msg] - point to message
+# For now, use absolute address at end of code
+# msg will be at 0x400078 + code_size
+# Let's put it at 0x4000B0 (offset 0x38 = 56 from entry)
+arch/x86/rex/w
+arch/x86/opcode/mov/ri32
+arch/x86/modrm/ri/rsi
+0xA2
+0x00
+0x40
+0x00
+
+# mov rdx, 13 (message length)
+arch/x86/rex/w
+arch/x86/opcode/mov/ri32
+arch/x86/modrm/ri/rdx
+0x0D
+0x00
+0x00
+0x00
+
+# syscall
+arch/x86/syscall
+
+# mov rax, 60 (sys_exit)
+arch/x86/rex/w
+arch/x86/opcode/mov/ri32
+arch/x86/modrm/ri/rax
+0x3C
+0x00
+0x00
+0x00
+
+# xor rdi, rdi
+arch/x86/rex/w
+arch/x86/opcode/xor/mr
+arch/x86/modrm/reg/rdi/rdi
+
+# syscall
+arch/x86/syscall
+
+# message: "Hello, BLD!\n\0"
+0x48
+0x65
+0x6C
+0x6C
+0x6F
+0x2C
+0x20
+0x42
+0x4C
+0x44
+0x21
+0x0A
+0x00

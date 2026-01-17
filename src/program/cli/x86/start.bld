@@ -1,0 +1,28 @@
+# _start: check argc, get argv[1]
+
+# mov rax, [rsp] - load argc
+arch/x86/rex/w
+arch/x86/opcode/mov/rm
+arch/x86/modrm/sib/rax
+arch/x86/sib/rsp
+
+# cmp rax, 2
+arch/x86/rex/w
+arch/x86/opcode/cmp/ri
+arch/x86/modrm/reg/rdi/rax
+0x02
+
+# jl no_arg (will need offset)
+# For now, skip this - we'll add jumps after getting basic flow working
+
+# mov rdi, [rsp+16] - load argv[1]
+arch/x86/rex/w
+arch/x86/opcode/mov/rm
+arch/x86/modrm/sib/disp8/rdi
+arch/x86/sib/rsp/disp8
+0x10
+
+# mov r12, rdi - save argv[1]
+arch/x86/rex/wr
+arch/x86/opcode/mov/rm
+arch/x86/modrm/reg/r12/rdi

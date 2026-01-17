@@ -1,0 +1,49 @@
+# Simple CLI - just cat the file
+program/cli/x86/start
+program/cli/x86/open
+program/cli/x86/read
+program/cli/x86/close
+
+# For now, write input directly to output (like cat)
+# mov r15, rax (bytes read = count)
+arch/x86/rex/wb
+arch/x86/opcode/mov/rm
+arch/x86/modrm/reg/r15/rax
+
+# Point output to input buffer for now
+# mov rax, 1 (sys_write)
+arch/x86/rex/w
+arch/x86/opcode/mov/ri32
+arch/x86/modrm/ri/rax
+0x01
+0x00
+0x00
+0x00
+
+# mov rdi, 1 (stdout)
+arch/x86/rex/w
+arch/x86/opcode/mov/ri32
+arch/x86/modrm/ri/rdi
+0x01
+0x00
+0x00
+0x00
+
+# mov rsi, 0x401000 (input buffer)
+arch/x86/rex/w
+arch/x86/opcode/mov/ri32
+arch/x86/modrm/ri/rsi
+0x00
+0x10
+0x40
+0x00
+
+# mov rdx, r15 (count)
+arch/x86/rex/wb
+arch/x86/opcode/mov/rm
+arch/x86/modrm/reg/rdx/r15
+
+# syscall
+arch/x86/syscall
+
+program/cli/x86/exit

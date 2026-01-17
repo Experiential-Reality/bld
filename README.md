@@ -111,6 +111,101 @@ See [BLD Theory](https://github.com/Experiential-Reality/theory) for full docume
 
 ---
 
+## The .bld Format
+
+BLD files use a minimal syntax where structure emerges from simple patterns:
+
+### Dimension — Repetition with `*`
+
+```bld
+# byte.bld - 8 bit positions
+8*b
+
+# u64.bld - 64 bit positions
+64*b
+
+# string.bld - variable length
+N*byte
+```
+
+The pattern `N*type` declares N positions of a type. Size comes from dimension.
+
+### Link — Composition with paths
+
+```bld
+# arch/x86/mov.bld - compose instruction parts
+prefix: arch/x86/rex
+opcode: arch/x86/opcode/mov
+modrm: arch/x86/modrm
+```
+
+Paths like `arch/x86/rex` reference other .bld files. The traverser follows the path and composes the output.
+
+### Boundary — Partition with `|` or `..`
+
+```bld
+# b.bld - the bit (two states)
+0..1
+
+# bld.bld - partition of constructs
+partition: identifier | sequence
+```
+
+Boundaries express distinctions: this OR that. A bit partitions into 0 or 1.
+
+### Fields — Named composition
+
+```bld
+# format/elf/header.bld - ELF64 header structure
+ident: format/elf/ident
+type: u16
+machine: u16
+version: u32
+entry: u64
+phoff: u64
+```
+
+Fields compose types into larger structures. The traverser walks each field in order.
+
+### Constants — Direct output
+
+```bld
+# arch/x86/opcode/mov.bld - x86 MOV opcodes
+ri: 0xB8
+rm: 0x8B
+mr: 0x89
+```
+
+Hex constants (`0x48`) and decimals emit bytes directly. Comments use `#`.
+
+### Sequence — Composition by listing
+
+```bld
+# program/hello.bld - compose a program
+format/elf/minimal
+program/hello/code
+```
+
+Lines listed in sequence compose in order. This produces ELF header followed by code.
+
+### Complete Example
+
+```bld
+# measure.bld - the cost formula
+partitions: N
+positions: M*b
+links: K
+```
+
+This expresses `Cost = B + D × L`:
+- `partitions: N` — count of boundaries
+- `positions: M*b` — M bits of dimension
+- `links: K` — count of connections
+
+The traverser composes by walking the structure. No special emit primitives needed.
+
+---
+
 ## Installation
 
 ```bash

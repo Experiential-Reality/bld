@@ -195,50 +195,71 @@ The traverser computes:
 
 Values don't exist in .bld files. They emerge during traversal.
 
-## Traverser Independence
+## The Traverser
 
-BLD expresses STRUCTURE. Different traversers produce different outputs from the same structure.
+**The reader IS the traverser.** You reading this are traversing it. An x86 chip executing binary traverses 0..1 space.
 
-Example - the CLI algorithm:
+| Traverser | Traverses | Output |
+|-----------|-----------|--------|
+| Human | .bld text | Understanding |
+| bld-py | .bld structure | Bytes |
+| x86 chip | Binary (0..1) | Computation |
+
+**Empty traverser = implicit.** When no traverser is specified, whatever is reading IS the traverser.
+
+**BLD is metaprogramming.** It describes how to create anything for a specific well-understood traverser.
+
+## Traverser Models
+
+The `traverser/` directory describes HOW specific traversers process structure:
+
 ```
-# program/cli/start.bld
-check: os/entry/argc
-compare: 2
-branch/lt: program/cli/error/noarg
-load: os/entry/argv/1
-save: r12
-```
-
-This is architecture-agnostic. The structure IS the algorithm.
-
-**x86 traverser** → machine code bytes
-**markdown traverser** → documentation
-**ARM traverser** → ARM machine code
-**analysis traverser** → cost metrics
-
-The structure doesn't change. Only the traverser changes.
-
-## Crystallized Form
-
-A crystallized file contains the OUTPUT of a specific traversal, stored as BLD:
-```
-# program/cli/code.bld - x86 crystallized
-0x48
-0x8B
-0x04
-0x24
-...
+src/traverser/
+├── x86.bld          # x86 traverser model
+└── x86/             # x86-specific traversal
+    ├── loop.bld     # how x86 traverses loops
+    ├── load.bld     # how x86 traverses loads
+    └── branch.bld   # how x86 traverses branches
 ```
 
-These bytes ARE constants - the result of x86 traversal. The crystallized form enables bootstrapping: the Python traverser composes crystallized bytes directly.
+When a pure traverser (bld-py) composes a program WITH a traverser model, it produces output for the target traverser.
 
-## Structural vs Crystallized
+## Self-Hosting Flow
 
-| Aspect | Structural | Crystallized |
-|--------|------------|--------------|
-| Content | Operations, links | Raw bytes |
-| Traverser | Architecture-specific | Generic (just emit) |
-| Portability | Yes | No (arch-specific) |
-| Use | Source of truth | Bootstrap artifact |
+```
+program/cli.bld  +  traverser/x86.bld  →  x86 machine code
+                                               ↓
+                                         x86 chip traverses
+                                               ↓
+                                         self-hosted binary
+```
 
-The structural form IS the program. The crystallized form is one traversal's output.
+1. **BLD structure** (`program/cli.bld`) - describes WHAT the program does
+2. **Traverser model** (`traverser/x86.bld`) - describes HOW x86 processes it
+3. **Pure traverser** (bld-py) composes both → x86 machine code
+4. **Target traverser** (x86 chip) executes it
+5. That binary can compose BLD for x86 → self-hosting complete
+
+## Different Traversers, Same Structure
+
+BLD expresses STRUCTURE. Different traversers produce different outputs:
+
+```
+# program/cli/parse/loop.bld - the algorithm
+load: byte
+  from: ptr
+branch/z: program/cli/write
+classify
+  space: skip
+  hex: program/cli/parse/hex
+```
+
+This structure IS the algorithm. It doesn't know about x86 or ARM.
+
+| Traverser Model | Output |
+|-----------------|--------|
+| `traverser/x86.bld` | x86 machine code |
+| `traverser/arm.bld` | ARM machine code |
+| `traverser/markdown.bld` | Documentation |
+
+The structure doesn't change. Only the traverser model changes.

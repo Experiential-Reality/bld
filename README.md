@@ -206,6 +206,43 @@ The traverser composes by walking the structure. No special emit primitives need
 
 ---
 
+## The Traverser
+
+**The reader IS the traverser.** You reading this are traversing it. An x86 chip executing binary traverses 0..1 space.
+
+| Traverser | Traverses | Output |
+|-----------|-----------|--------|
+| Human | .bld text | Understanding |
+| bld-py | .bld structure | Bytes |
+| x86 chip | Binary (0..1) | Computation |
+
+**BLD is metaprogramming.** It describes how to create anything for a specific well-understood traverser.
+
+### Traverser Models
+
+The `traverser/` directory describes HOW specific traversers process structure:
+
+```bld
+# traverser/x86.bld - how x86 processes BLD
+loop: traverser/x86/loop
+load: traverser/x86/load
+branch: traverser/x86/branch
+```
+
+When bld-py composes a program WITH a traverser model, it produces output for that target traverser.
+
+### Self-Hosting Flow
+
+```
+program/cli.bld  +  traverser/x86.bld  →  x86 machine code
+                                               ↓
+                                         x86 chip traverses
+                                               ↓
+                                         self-hosted binary
+```
+
+---
+
 ## Self-Hosted
 
 BLD is fully self-hosted. The compiler, traverser, and all tooling are implemented in BLD itself:

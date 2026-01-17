@@ -1,0 +1,3 @@
+# 2 pages contribution to LE byte 1
+# 2 * 0x1000 = 0x2000 → byte 1 = 0x20
+0x20

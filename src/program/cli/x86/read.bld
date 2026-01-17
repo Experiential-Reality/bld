@@ -10,23 +10,17 @@ arch/x86/rex/wb
 arch/x86/opcode/mov/rm
 arch/x86/modrm/reg/rdi/r13
 
-# mov rsi, 0x401000 (input buffer)
+# mov rsi, input buffer
 arch/x86/rex/w
 arch/x86/opcode/mov/ri32
 arch/x86/modrm/ri/rsi
-0x00
-0x10
-0x40
-0x00
+program/cli/x86/memory/buffer
 
-# mov rdx, 4096 (0x1000)
+# mov rdx, page size (4096)
 arch/x86/rex/w
 arch/x86/opcode/mov/ri32
 arch/x86/modrm/ri/rdx
-0x00
-0x10
-0x00
-0x00
+os/linux/page/imm32
 
 # syscall
 arch/x86/syscall

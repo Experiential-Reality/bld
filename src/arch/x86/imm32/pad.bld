@@ -1,0 +1,5 @@
+# Little-endian 32-bit padding: extend byte to 32-bit
+# Used by x86 instructions AND ELF format (same constant)
+0
+0
+0

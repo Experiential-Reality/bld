@@ -1,0 +1,6 @@
+# Output buffer location: load + 2*page = 0x402000
+# 32-bit little-endian
+0
+os/linux/page/x86/byte1/2
+os/linux/x86/load/byte2
+0

@@ -1,0 +1,51 @@
+# ELF64 header (64 bytes)
+format/elf/ident/compose
+
+# e_type: ET_EXEC
+format/elf/const/type/exec
+
+# e_machine: x86-64
+format/elf/const/machine/x86_64
+
+# e_version: 1
+format/elf/const/version
+arch/x86/imm32/pad
+
+# e_entry: entry point - 64-bit LE
+format/elf/const/entry/cli
+
+# e_phoff: 64 - 64-bit LE
+64
+arch/x86/imm64/pad
+
+# e_shoff: 0 - 64-bit LE
+0
+arch/x86/imm64/pad
+
+# e_flags: 0 - 32-bit
+0
+arch/x86/imm32/pad
+
+# e_ehsize: 64 - 16-bit
+64
+arch/x86/imm16/pad
+
+# e_phentsize: 56 - 16-bit
+56
+arch/x86/imm16/pad
+
+# e_phnum: 1 - 16-bit
+1
+arch/x86/imm16/pad
+
+# e_shentsize: 0 - 16-bit
+0
+arch/x86/imm16/pad
+
+# e_shnum: 0 - 16-bit
+0
+arch/x86/imm16/pad
+
+# e_shstrndx: 0 - 16-bit
+0
+arch/x86/imm16/pad

@@ -1,0 +1,3 @@
+# IMUL r64, r/m64 (two-operand form)
+arch/x86/prefix/escape
+0xAF

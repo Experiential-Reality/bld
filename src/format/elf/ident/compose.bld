@@ -1,0 +1,15 @@
+# ELF64 ident (16 bytes)
+format/elf/const/magic
+format/elf/const/class64
+format/elf/const/lsb
+format/elf/const/version
+format/elf/const/osabi/none
+# padding to 16 bytes (8 zeros)
+0
+0
+0
+0
+0
+0
+0
+0

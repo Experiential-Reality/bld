@@ -1,31 +1,24 @@
 # write_out: write(1, output_buf, count)
 
-# mov rax, 1 (sys_write)
+# mov rax, sys_write
 arch/x86/rex/w
 arch/x86/opcode/mov/ri32
 arch/x86/modrm/ri/rax
-0x01
-0x00
-0x00
-0x00
+os/linux/syscall/write
+arch/x86/imm32/pad
 
-# mov rdi, 1 (stdout)
+# mov rdi, stdout
 arch/x86/rex/w
 arch/x86/opcode/mov/ri32
 arch/x86/modrm/ri/rdi
-0x01
-0x00
-0x00
-0x00
+os/linux/fd/stdout
+arch/x86/imm32/pad
 
-# mov rsi, 0x402000 (output buffer)
+# mov rsi, output buffer
 arch/x86/rex/w
 arch/x86/opcode/mov/ri32
 arch/x86/modrm/ri/rsi
-0x00
-0x20
-0x40
-0x00
+os/linux/x86/buffer/output
 
 # mov rdx, r15 (count)
 arch/x86/rex/wb

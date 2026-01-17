@@ -1,0 +1,4 @@
+# x86 implementation of core/logic/or
+# Produces OR instruction when traversed
+core/logic/or
+arch/x86/opcode/or/rm

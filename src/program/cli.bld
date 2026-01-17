@@ -1,5 +1,2 @@
-# BLD CLI - Self-hosting compose
-# Currently uses simple cat-like behavior
-# TODO: implement full parsing via program/cli/algorithm
-format/elf/cli
-program/cli/x86/simple
+# Composable CLI for x86 Linux ELF
+program/cli/x86/compose

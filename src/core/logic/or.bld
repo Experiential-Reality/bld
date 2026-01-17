@@ -1,0 +1,2 @@
+# Abstract concept: logical disjunction
+# Architecture provides implementation (x86 → OR)

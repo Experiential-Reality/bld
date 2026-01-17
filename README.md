@@ -218,27 +218,31 @@ The traverser composes by walking the structure. No special emit primitives need
 
 **BLD is metaprogramming.** It describes how to create anything for a specific well-understood traverser.
 
-### Traverser Models
+### Traverser Pipeline = Existing Structure
 
-The `traverser/` directory describes HOW specific traversers process structure:
+The `--to` chain in the CLI references existing directories as traverser stages:
 
-```bld
-# traverser/x86.bld - how x86 processes BLD
-loop: traverser/x86/loop
-load: traverser/x86/load
-branch: traverser/x86/branch
-```
+| Stage | Directory | Purpose |
+|-------|-----------|---------|
+| `linux` | `os/linux/` | Entry point, syscalls, args |
+| `x86` | `arch/x86/` | Instruction encoding |
+| `elf` | `format/elf/` | Binary format |
 
-When bld-py composes a program WITH a traverser model, it produces output for that target traverser.
+No separate `traverser/` directory needed. It's all natural BLD composition.
+
+**bld IS the pure traverser** — it can traverse any traverser→structure relationship.
 
 ### Self-Hosting Flow
 
-```
-program/cli.bld  +  traverser/x86.bld  →  x86 machine code
-                                               ↓
-                                         x86 chip traverses
-                                               ↓
-                                         self-hosted binary
+```bash
+# Bootstrap (Python traverses BLD → x86)
+python -m bld_py compile --from bld --to linux,x86,elf cli.bld bin/bld
+
+# Self-host (BLD binary traverses BLD → x86)
+bin/bld compile --from bld --to linux,x86,elf cli.bld bin/bld2
+
+# Verify fixpoint
+diff bin/bld bin/bld2
 ```
 
 ---

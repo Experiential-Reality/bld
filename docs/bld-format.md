@@ -209,57 +209,59 @@ Values don't exist in .bld files. They emerge during traversal.
 
 **BLD is metaprogramming.** It describes how to create anything for a specific well-understood traverser.
 
-## Traverser Models
+## Traverser Pipeline = Existing Structure
 
-The `traverser/` directory describes HOW specific traversers process structure:
+The `--to` chain in the CLI references existing directories as traverser stages:
 
 ```
-src/traverser/
-├── x86.bld          # x86 traverser model
-└── x86/             # x86-specific traversal
-    ├── loop.bld     # how x86 traverses loops
-    ├── load.bld     # how x86 traverses loads
-    └── branch.bld   # how x86 traverses branches
+bld compile --from bld --to linux,x86,elf cli.bld bin/bld
 ```
 
-When a pure traverser (bld-py) composes a program WITH a traverser model, it produces output for the target traverser.
+| Stage | Directory | Purpose |
+|-------|-----------|---------|
+| `linux` | `os/linux/` | Entry point, syscalls, args |
+| `x86` | `arch/x86/` | Instruction encoding |
+| `elf` | `format/elf/` | Binary format |
+
+No separate `traverser/` directory needed. It's all natural BLD composition.
+
+**bld IS the pure traverser** — it can traverse any traverser→structure relationship.
 
 ## Self-Hosting Flow
 
-```
-program/cli.bld  +  traverser/x86.bld  →  x86 machine code
-                                               ↓
-                                         x86 chip traverses
-                                               ↓
-                                         self-hosted binary
-```
+```bash
+# Bootstrap (Python traverses BLD → x86)
+python -m bld_py compile --from bld --to linux,x86,elf cli.bld bin/bld
 
-1. **BLD structure** (`program/cli.bld`) - describes WHAT the program does
-2. **Traverser model** (`traverser/x86.bld`) - describes HOW x86 processes it
-3. **Pure traverser** (bld-py) composes both → x86 machine code
-4. **Target traverser** (x86 chip) executes it
-5. That binary can compose BLD for x86 → self-hosting complete
+# Self-host (BLD binary traverses BLD → x86)
+bin/bld compile --from bld --to linux,x86,elf cli.bld bin/bld2
 
-## Different Traversers, Same Structure
-
-BLD expresses STRUCTURE. Different traversers produce different outputs:
-
-```
-# program/cli/parse/loop.bld - the algorithm
-load: byte
-  from: ptr
-branch/z: program/cli/write
-classify
-  space: skip
-  hex: program/cli/parse/hex
+# Verify fixpoint
+diff bin/bld bin/bld2
 ```
 
-This structure IS the algorithm. It doesn't know about x86 or ARM.
+The pipeline composes through each stage:
 
-| Traverser Model | Output |
-|-----------------|--------|
-| `traverser/x86.bld` | x86 machine code |
-| `traverser/arm.bld` | ARM machine code |
-| `traverser/markdown.bld` | Documentation |
+```
+bld structure
+     ↓ (os/linux - entry, syscalls, args)
+Linux operations
+     ↓ (arch/x86 - instruction encoding)
+x86 machine code
+     ↓ (format/elf - binary format)
+ELF executable
+```
 
-The structure doesn't change. Only the traverser model changes.
+## Different Targets, Same Structure
+
+BLD expresses STRUCTURE. The `--to` chain determines the target:
+
+```bash
+# x86 Linux ELF
+bld compile --from bld --to linux,x86,elf cli.bld bin/bld
+
+# ARM Linux ELF (same structure, different --to)
+bld compile --from bld --to linux,arm,elf cli.bld bin/bld-arm
+```
+
+The structure doesn't change. Only the `--to` chain changes, composing through different directories.

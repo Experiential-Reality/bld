@@ -1,0 +1,2 @@
+# Abstract concept: logical conjunction
+# Architecture provides implementation (x86 → AND)

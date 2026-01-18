@@ -1,6 +1,6 @@
-ascii/space|program/cli/parse/skip
-ascii/tab|program/cli/parse/skip
-ascii/newline|program/cli/parse/next
-ascii/hash|program/cli/parse/comment
-ascii/0|program/cli/parse/hex
-digit|program/cli/parse/decimal
+ascii/space|parse/skip
+ascii/tab|parse/skip
+ascii/newline|parse/next
+ascii/0|parse/hex
+digit|parse/decimal
+alpha|parse/link

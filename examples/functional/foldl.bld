@@ -1,8 +1,0 @@
-# foldl - Left fold with accumulator
-# deps=1 means sequential execution
-
-structure foldl
-
-D xs: N [contiguous]
-B empty_check: empty | non_empty
-L combine: acc -> acc (deps=1)

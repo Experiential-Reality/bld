@@ -1,0 +1,3 @@
+arch/x86/opcode/call
+l
+arch/x86/opcode/ret

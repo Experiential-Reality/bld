@@ -1,3 +1,5 @@
-format/elf/header
-format/elf/phdr
-program/cli/x86/simple
+from/bld
+to/arch/x86
+to/os/linux
+to/format/elf
+compose

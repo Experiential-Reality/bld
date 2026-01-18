@@ -1,9 +1,0 @@
-# concat - Flatten nested lists
-# Reduce pattern on outer dimension
-
-structure concat
-
-D xss: N [contiguous]
-D inner: M [contiguous]
-B empty_check: empty | non_empty
-L flatten: nested -> flat (pattern=reduce)

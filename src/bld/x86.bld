@@ -1,3 +1,3 @@
 line|arch/x86/instruction
 l|arch/x86/call
-n*|arch/x86/loop
+d/|arch/x86/loop

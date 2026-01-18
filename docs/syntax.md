@@ -36,13 +36,17 @@ That's the entire language.
 - from count → unit = compose (e.g., 8 of b)
 - from unit → count = decompose
 
-**`\` is an encoding hack** - only exists because concept characters (`|`, `/`, `\n`) collide with file encoding. It's not a concept.
+**Concept characters must be escaped to express the concept as content.**
 
-| Escape | Meaning |
+| Escape | Concept |
 |--------|---------|
-| `\/` | Literal `/` |
-| `\|` | Literal `|` |
-| `\\` | Literal `\` |
+| `\|` | B (boundary) |
+| `\/` | L (link) |
+| `\\` | escape itself |
+
+Without escape, `|` IS structure. With escape, `\|` expresses B as content.
+
+`\` is an encoding hack - not a concept, just collision avoidance.
 
 ## Self-Reference: bld.bld
 
@@ -119,7 +123,7 @@ A reference to another concept.
 ### d.bld - Dimension
 
 ```
-n/unit
+d/unit
 ```
 
 n repetitions of unit. The traverser determines direction from context.
@@ -136,7 +140,7 @@ A boundary partitioning line content types.
 
 ```
 name
-n/line
+d/line
 ```
 
 A name followed by n lines.
@@ -187,7 +191,7 @@ z
 
 Dimension expressions:
 - `8/b` = 8 bits (byte)
-- `n/line` = n lines (file)
+- `d/line` = n lines (file)
 - `64/b` = 64 bits (u64)
 
 ## Dispatch Tables

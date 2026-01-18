@@ -22,6 +22,16 @@ BLD (Boundary/Link/Dimension) decomposes structure. The traverser composes.
 | **L** (Link) | Connection, composition | What connects to what? |
 | **D** (Dimension) | Repetition, positions | What repeats? |
 
+## The Three Concept Characters
+
+| Character | Primitive |
+|-----------|-----------|
+| `\|` | B |
+| `/` | L |
+| `\n` | D |
+
+That's the entire language. `/` handles both directions - the traverser determines direction from `to/from` context. `\` is an encoding hack for literal characters.
+
 ## Repository Structure
 
 ```
@@ -77,7 +87,7 @@ A constant is an indivisible unit of meaning. Ask: "What is 0..1 for this?"
 | `0x7F` (ELF magic) | YES | Indivisible: "this is ELF" |
 | `60` (sys_exit) | YES | Indivisible: "exit syscall" |
 | `0x40` (load byte2) | YES | Indivisible: "load address contribution" |
-| `0x400000` (load addr) | NO | It's `32*b` - composition of bytes |
+| `0x400000` (load addr) | NO | It's `32/b` - composition of bytes |
 
 ## Computation IS Structure
 

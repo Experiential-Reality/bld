@@ -123,10 +123,10 @@ A reference to another concept.
 ### d.bld - Dimension
 
 ```
-d/unit
+d/b
 ```
 
-n repetitions of unit. The traverser determines direction from context.
+n repetitions of boundary. `b` (0|1) is the fundamental unit concept.
 
 ### line.bld - Line Types
 
@@ -249,6 +249,44 @@ A.bld:        B.bld:        Result:
 0x02                        0x02
 B                           0x03
 ```
+
+## Raw Concepts
+
+A **raw concept** is maximally decomposed - nothing further to break down.
+
+### Implicit D
+
+A link to a missing file IS a raw concept. The path encodes the concept:
+
+```
+lang/english/alphabet/b
+```
+
+If `b.bld` doesn't exist, `b` is the raw concept. **Never create empty files** - disconnected links ARE implicit D.
+
+### Why This Works
+
+The letter 'b' is fundamental. There's nothing inside it to express. A missing file represents: "end of decomposition - accumulate the concept itself."
+
+From the cost formula: raw concepts have minimal cost (B=0, L=0).
+
+### Validation
+
+If a parent D structure exists, the raw concept must appear in it:
+
+```
+lang/english/alphabet.bld:
+a
+b
+c
+...
+z
+```
+
+The link `lang/english/alphabet/b` is valid (b is in alphabet).
+The link `lang/english/alphabet/xyz` is invalid (xyz is not in alphabet).
+
+The traverser validates raw concepts against parent D structures to catch errors.
 
 ## The Compensation Principle
 

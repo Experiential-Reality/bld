@@ -1,198 +1,231 @@
 # BLD Language Syntax
 
-BLD (Boundary/Link/Dimension) is a structural language where the filesystem IS the syntax.
+BLD (Boundary/Link/Dimension) expresses structure. The traverser composes.
 
-## Separators
+> For mathematical foundations, see [theory](https://github.com/experiential-reality-org/theory).
 
-Two separators with distinct meanings:
+## Traversers
 
-| Symbol | Meaning | Usage |
-|--------|---------|-------|
-| `|` | Boundary | Partitions options: `0|1`, `b|l` |
-| `/` | Path | Separates path segments: `core/math/add` |
+| Traverser | Input | Output |
+|-----------|-------|--------|
+| Human | .bld text | Understanding |
+| bld-py | .bld structure | Bytes |
+| x86 chip | Binary | Computation |
 
-## Primitives
+You reading this are a traverser.
 
-Three irreducible primitives:
+## Constants Not Values
 
-| Primitive | Meaning | File |
-|-----------|---------|------|
-| **B** | Boundary (partition) | `b.bld` |
-| **L** | Link (connection) | `l.bld` |
-| **D** | Dimension (repetition) | `d.bld` |
+**.bld files contain CONSTANTS and STRUCTURE only.**
 
-## Core Definitions
+Values, state, and accumulation exist in the traverser. The structure is fixed. The traverser moves through it.
 
-### b.bld - The Bit
-```
-0|1
-```
-The fundamental unit. A boundary between 0 and 1.
+## The Three Concept Characters
 
-### d.bld - Dimension
-```
-n*b
-```
-Repetition. `n` positions of `b`.
+BLD has exactly THREE concept characters:
 
-### l.bld - Link
-```
-path
-```
-A reference to another concept via path.
+| Character | Primitive | Meaning |
+|-----------|-----------|---------|
+| `\|` | B | Boundary - partitions left from right |
+| `/` | L | Link - connects, traversible both directions |
+| `\n` | D | Dimension - each line is a position |
 
-### string.bld - String
-```
-n*b
-```
-A sequence of bytes. Alias for dimension of bits.
+That's the entire language.
 
-### path.bld - Path
-```
-n*string
-```
-A sequence of strings. Separator `/` matched at traversal time.
+**`/` handles both directions** - the traverser determines direction from `to/from` context:
+- from count → unit = compose (e.g., 8 of b)
+- from unit → count = decompose
 
-### line.bld - Line
-```
-b|l
-```
-A line is either bytes (b) or a link (l). Boundary between literal and reference.
+**`\` is an encoding hack** - only exists because concept characters (`|`, `/`, `\n`) collide with file encoding. It's not a concept.
 
-### file.bld - File
-```
-string
-n*line
-```
-A file is a name (string) followed by contents (n lines).
+| Escape | Meaning |
+|--------|---------|
+| `\/` | Literal `/` |
+| `\|` | Literal `|` |
+| `\\` | Literal `\` |
 
-### bld.bld - The Language
+## Self-Reference: bld.bld
+
+BLD defines itself:
+
 ```
+bld.bld:
 b
 d
 l
 ```
-BLD itself: three links to the three primitives.
 
-## File Format
+Three links. BLD IS b, d, l.
 
-Every `.bld` file follows this structure:
+## The Three Questions
+
+To describe ANY structure, ask:
+
+| Question | Primitive | What to find |
+|----------|-----------|--------------|
+| **Where does behavior partition?** | B | Choices, thresholds, type tags |
+| **What connects to what?** | L | References, dependencies |
+| **What repeats?** | D | Arrays, sequences |
+
+The output is structure. This IS the description.
+
+## The Cost Formula
 
 ```
-filename.bld     <- concept name (string)
-─────────────
-line 1           <- D position 1 (b|l)
-line 2           <- D position 2 (b|l)
-line 3           <- D position 3 (b|l)
-...
+Cost = B + D × L
 ```
 
-- **Filename** = concept name
-- **Lines** = dimension (D) positions
-- **Line content** = bytes (b) OR link (l)
-- **Directory** `/` = path separator
+- **B** = boundary cost (topological, invariant under scaling)
+- **D** = dimension (repetition count)
+- **L** = link cost (geometric, scales with D)
 
-## Constants
+D multiplies L, not B:
+- More lines → more link costs
+- Boundaries stay local
 
-A **const** is any file with:
-- No links (only b, no l)
-- Single dimension (just n*b)
-- No boundary (no `|` in content)
+## Syntax
 
-Examples of consts:
+The filesystem IS the syntax:
+- **Files** are concepts
+- **Paths** `/` are links (L)
+- **Pipes** `|` are boundaries (B)
+- **Lines** are dimensions (D)
+
+### Path Resolution
+
+`core/math/add` → `src/core/math/add.bld`
+
+- Paths map to filesystem
+- `.bld` extension implicit
+
+## Core Definitions
+
+### b.bld - Boundary
+
 ```
-ascii/H.bld:
-0x48
-
-ascii/newline.bld:
-0x0A
-
-os/linux/syscall/exit.bld:
-60
-```
-
-Constants are leaf nodes - they produce bytes directly without composition.
-
-## Links
-
-A **link** is a path to another `.bld` file:
-```
-core/mathematics/add
+0|1
 ```
 
-This references `core/mathematics/add.bld`. The traverser:
-1. Follows the path
-2. Composes the target file
-3. Returns the result
+Partitions bit-space into two regions.
+
+### l.bld - Link
+
+```
+path
+```
+
+A reference to another concept.
+
+### d.bld - Dimension
+
+```
+n/unit
+```
+
+n repetitions of unit. The traverser determines direction from context.
+
+### line.bld - Line Types
+
+```
+empty|hex|decimal|field|dimension|path|escaped
+```
+
+A boundary partitioning line content types.
+
+### file.bld - File Structure
+
+```
+name
+n/line
+```
+
+A name followed by n lines.
 
 ## Boundaries
 
-The pipe `|` separates partitions:
+The pipe `|` partitions space:
+
 ```
-0|1       <- bit: zero or one
-b|l       <- line: bytes or link
-yes|no    <- boolean
+0|1
+empty|hex|decimal|field|dimension|path|escaped
+left|right
 ```
 
-A boundary partitions a space into options.
+- Left of `|` = one partition
+- Right of `|` = another partition (can be link or constant)
+
+## Links
+
+The slash `/` connects:
+
+```
+core/mathematics/add
+ascii/H
+8/b
+```
+
+The traverser:
+1. Follows the path
+2. Composes the target
+3. Returns result
+
+Direction determined by `to/from` context.
+
+## Dimensions
+
+Each line is a D position:
+
+```
+a
+b
+c
+...
+z
+```
+
+26 lines = 26 positions. This IS `26/letter`.
+
+Dimension expressions:
+- `8/b` = 8 bits (byte)
+- `n/line` = n lines (file)
+- `64/b` = 64 bits (u64)
 
 ## Dispatch Tables
 
-A dispatch table maps conditions to actions:
-```
-n*(b|l)
-```
+D lines of `constant|link`:
 
-Each line is `condition|action`:
 ```
 classify.bld:
 ascii/space|skip
 ascii/tab|skip
 ascii/newline|next
 ascii/hash|comment
-ascii/0|hex
-digit|decimal
-alpha|path
 ```
 
-Order matters - first match wins. The traverser:
-1. Reads input
-2. Matches condition (left of `|`)
-3. Follows action link (right of `|`)
+Structure:
+- Each line is a D position
+- Each line has `constant|link` (boundary)
+- Left of `|` = what to match
+- Right of `|` = where to go
 
-## Dimensions
+## Traversal
 
-Dimension is repetition:
-```
-n*unit
-```
+The traverser walks structure:
 
-Where `n` is the count and `unit` is what repeats.
+1. **Read** the concept (file)
+2. **For each line** (D positions):
+   - If `|` present: boundary - match left, follow right
+   - Else if `/` present: link - follow path
+   - Otherwise: constant - accumulate
+3. **Return** accumulated result
 
-Examples:
-- `8*b` = byte (8 bits)
-- `n*line` = file contents (n lines)
-- `n*string` = path (n segments)
-- `n*(b|l)` = dispatch table (n entries)
+**Direction from context**: The traverser knows direction from `to/from` structures, not from the operator.
 
-## Real Examples
+### Direction Matters
 
-### BLD defining itself
-
-```
-bld/
-├── b.bld           # 0|1
-├── d.bld           # n*b
-├── l.bld           # path
-├── string.bld      # n*b
-├── path.bld        # n*string
-├── line.bld        # b|l
-├── file.bld        # string n*line
-├── dispatch.bld    # n*(b|l)
-└── bld.bld         # b d l
-```
-
-### Mathematics
+Traversal direction determines operation:
+- Forward = one operation
+- Reverse = inverse operation
 
 ```
 core/mathematics/add.bld:
@@ -200,122 +233,52 @@ b
 b
 ```
 
-Two bit operands. Forward traversal = add, reverse = subtract.
-
-```
-core/mathematics/mult.bld:
-b
-b
-```
-
-Two bit operands. Forward traversal = multiply, reverse = divide.
-
-### ASCII Character (const)
-
-```
-ascii/H.bld:
-0x48
-```
-
-No links, single dimension, no boundary = const. Produces byte 0x48.
-
-### String using links
-
-```
-program/cli/data/hello.bld:
-ascii/H
-ascii/e
-ascii/l
-ascii/l
-ascii/o
-```
-
-Five links to ASCII concepts. Composes to "Hello".
-
-### x86 Instruction (const)
-
-```
-arch/x86/syscall.bld:
-0x0F
-0x05
-```
-
-Two const bytes. Produces the syscall instruction.
-
-### Parser Dispatch
-
-```
-program/cli/parse/classify.bld:
-ascii/space|skip
-ascii/tab|skip
-ascii/newline|next
-ascii/hash|comment
-ascii/0|hex
-digit|decimal
-alpha|path
-```
-
-Input classification. Matches byte, follows handler.
-
-### Composed Program
-
-```
-program/cli/x86/exit.bld:
-arch/x86/rex/w
-arch/x86/opcode/mov/ri32
-arch/x86/modrm/ri/rax
-os/linux/syscall/exit
-arch/x86/imm32/pad
-arch/x86/syscall
-```
-
-Links compose to x86 code that calls exit syscall.
-
-## Traversal
-
-The traverser walks the structure:
-
-1. **Read file** - get lines
-2. **For each line**:
-   - If `|` present: dispatch (match left, follow right)
-   - If `/` present: link (follow path)
-   - Otherwise: const (emit bytes)
-3. **Return** composed bytes
-
-Traversal direction matters:
-- Forward through `add.bld` = addition
-- Reverse through `add.bld` = subtraction
+Two operands. Forward = add. Reverse = subtract.
 
 ## Composition
 
-Composition is concatenation with structure:
+When A links to B, B's content composes where the link was:
 
 ```
-A.bld:        B.bld:        A composed with B:
+A.bld:        B.bld:        Result:
 0x01          0x03          0x01
 0x02                        0x02
-                            0x03
+B                           0x03
 ```
 
-When A links to B, B's bytes follow A's bytes.
+## The Compensation Principle
+
+L can approximate B, but B cannot approximate L.
+
+- B is topological (local, invariant under D)
+- L is geometric (scales with D)
+- D×L can approximate complex B
+- D×B cannot replace missing L
+
+## Why It Works
+
+BLD = Lie Theory (Sophus Lie, 1870s).
+
+| BLD | Lie Algebra |
+|-----|-------------|
+| D | Generators |
+| L | Structure constants |
+| B | Topology |
+
+The cost formula `Cost = B + D×L` IS the Lie algebra dimension formula.
+
+When you decompose into B/L/D, you find the algebraic structure that was always there. The traverser computes the algebra. Bytes fall out.
 
 ## Summary
 
-| Concept | Structure | Example |
-|---------|-----------|---------|
-| Bit | `0|1` | fundamental unit |
-| Dimension | `n*b` | repetition |
-| Link | `path` | reference |
-| String | `n*b` | byte sequence |
-| Path | `n*string` | segment sequence |
-| Line | `b|l` | literal or reference |
-| Dispatch | `n*(b|l)` | condition→action table |
-| File | `string n*line` | name + contents |
-| Const | file with only b | `0x48` |
-| BLD | `b d l` | the language |
+| Character | Primitive | Question |
+|-----------|-----------|----------|
+| `\|` | B | Where does behavior partition? |
+| `/` | L | What connects to what? |
+| `\n` | D | What repeats? |
 
-The filesystem IS the language:
-- Files are concepts
-- Paths (`/`) are links
-- Pipes (`|`) are boundaries
-- Lines are dimensions
+Three characters. Three primitives. The traverser composes.
+
+```
+Cost = B + D × L
+```

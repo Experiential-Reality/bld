@@ -1,2 +1,2 @@
-rm: 0x33
-mr: 0x31
+arch/x86/opcode/xor/rm
+arch/x86/opcode/xor/mr

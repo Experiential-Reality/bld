@@ -1,4 +1,3 @@
-fd: 1
-buf: 0x402000
-len: count
-syscall: os/linux/syscall/write
+1
+os/linux/x86/buffer/output
+os/linux/syscall/write

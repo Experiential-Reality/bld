@@ -1,3 +1,3 @@
-mod: arch/x86/modrm/mod
-reg: arch/x86/modrm/reg
-rm: arch/x86/modrm/rm
+arch/x86/modrm/mod
+arch/x86/modrm/reg
+arch/x86/modrm/rm

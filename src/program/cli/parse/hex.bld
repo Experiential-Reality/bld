@@ -1,17 +1,2 @@
-skip: 2
-accum: 0
-
-loop
-  load: byte
-    from: ptr
-  branch/end: done
-  convert: hex/digit
-  shift: accum
-    by: 4
-  add: accum
-  next: ptr
-
-done
-  emit: accum
-    to: output
-  inc: count
+program/cli/parse/skip/2
+program/cli/parse/hex/loop

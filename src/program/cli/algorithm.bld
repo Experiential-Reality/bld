@@ -1,7 +1,3 @@
-# CLI Algorithm - architecture agnostic
-# A markdown traverser produces docs
-# An x86 traverser produces machine code
-
 program/cli/start
 program/cli/open
 program/cli/read

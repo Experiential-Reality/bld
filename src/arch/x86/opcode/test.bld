@@ -1,2 +1,2 @@
-byte: 0x84
-word: 0x85
+arch/x86/opcode/test/byte
+arch/x86/opcode/test/word

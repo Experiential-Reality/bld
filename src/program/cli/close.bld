@@ -1,2 +1,1 @@
-fd: r13
-syscall: os/linux/syscall/close
+os/linux/syscall/close

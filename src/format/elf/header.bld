@@ -1,14 +1,24 @@
-ident: format/elf/ident
-type: u16
-machine: u16
-version: u32
-entry: u64
-phoff: u64
-shoff: u64
-flags: u32
-ehsize: u16
-phentsize: u16
-phnum: u16
-shentsize: u16
-shnum: u16
-shstrndx: u16
+format/elf/ident
+format/elf/const/type/exec
+format/elf/const/machine/x86_64
+format/elf/const/version
+arch/x86/imm32/pad
+format/elf/const/entry/cli
+64
+arch/x86/imm64/pad
+0
+arch/x86/imm64/pad
+0
+arch/x86/imm32/pad
+64
+arch/x86/imm16/pad
+56
+arch/x86/imm16/pad
+1
+arch/x86/imm16/pad
+0
+arch/x86/imm16/pad
+0
+arch/x86/imm16/pad
+0
+arch/x86/imm16/pad

@@ -1,2 +1,2 @@
-escape: arch/x86/prefix/escape
-opcode: 0x05
+0x0F
+0x05

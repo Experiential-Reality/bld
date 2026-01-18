@@ -1,4 +1,3 @@
-fd: r13
-buf: 0x401000
-len: 4096
-syscall: os/linux/syscall/read
+os/linux/x86/buffer
+os/linux/page
+os/linux/syscall/read

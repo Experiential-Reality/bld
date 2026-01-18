@@ -1,6 +1,6 @@
-fd: 2
-buf: program/cli/data/error
-len: 12
-syscall: os/linux/syscall/write
-code: 1
-syscall: os/linux/syscall/exit
+2
+program/cli/data/error
+12
+os/linux/syscall/write
+1
+os/linux/syscall/exit

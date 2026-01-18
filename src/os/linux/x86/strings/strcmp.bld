@@ -1,3 +1,4 @@
-loop: arch/x86/loop
-match: arch/x86/xor arch/x86/jmp
-mismatch: arch/x86/mov
+arch/x86/loop
+arch/x86/xor
+arch/x86/jmp
+arch/x86/mov

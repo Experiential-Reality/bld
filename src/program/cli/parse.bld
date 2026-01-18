@@ -1,8 +1,1 @@
-# D - repeats over input bytes
-input: 0x401000
-output: 0x402000
-ptr: r14
-count: r15
-accum: rbx
-
-loop: program/cli/parse/loop
+program/cli/parse/loop

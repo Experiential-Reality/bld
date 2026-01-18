@@ -1,31 +1,18 @@
-# open_file: open(argv[1], O_RDONLY, 0)
-
-# mov rax, sys_open
 arch/x86/rex/w
 arch/x86/opcode/mov/ri32
 arch/x86/modrm/ri/rax
 os/linux/syscall/open
 arch/x86/imm32/pad
-
-# mov rdi, r12 (path)
 arch/x86/rex/wb
 arch/x86/opcode/mov/rm
 arch/x86/modrm/reg/rdi/r12
-
-# xor rsi, rsi (O_RDONLY)
 arch/x86/rex/w
 arch/x86/opcode/xor/mr
 arch/x86/modrm/reg/rsi/rsi
-
-# xor rdx, rdx (mode)
 arch/x86/rex/w
 arch/x86/opcode/xor/mr
 arch/x86/modrm/reg/rdx/rdx
-
-# syscall
 arch/x86/syscall
-
-# mov r13, rax (save fd)
 arch/x86/rex/wr
 arch/x86/opcode/mov/rm
 arch/x86/modrm/reg/r13/rax

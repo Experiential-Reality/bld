@@ -1,16 +1,1 @@
-accum: 0
-
-loop
-  load: byte
-    from: ptr
-  branch/end: done
-  convert: decimal/digit
-  mul: accum
-    by: 10
-  add: accum
-  next: ptr
-
-done
-  emit: accum
-    to: output
-  inc: count
+program/cli/parse/decimal/loop

@@ -1,5 +1,3 @@
-# CLI entry point: load + headers offset
-# 64-bit LE: bytes from headers offset and load address
 format/elf/headers/offset
 0
 os/linux/x86/load/byte2

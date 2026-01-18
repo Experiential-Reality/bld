@@ -1,2 +1,2 @@
-byte: 0x3A
-word: 0x3B
+arch/x86/opcode/cmp/byte
+arch/x86/opcode/cmp/word

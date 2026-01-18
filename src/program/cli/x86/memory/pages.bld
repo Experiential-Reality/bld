@@ -1,3 +1,1 @@
-# CLI memory: 3 pages (code + input + output)
-# 0x30 = 3 * 0x10 = 3 pages in LE byte 1
 0x30

@@ -1,6 +1,13 @@
-magic: u32
-class: byte
-data: byte
-version: byte
-osabi: byte
-pad: u64
+format/elf/const/magic
+format/elf/const/class64
+format/elf/const/lsb
+format/elf/const/version
+format/elf/const/osabi/none
+0
+0
+0
+0
+0
+0
+0
+0

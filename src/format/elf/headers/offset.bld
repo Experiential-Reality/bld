@@ -1,3 +1,1 @@
-# ELF64 headers total: header(64) + phdr(56) = 120 = 0x78
-# This is the offset from load to code entry
 0x78

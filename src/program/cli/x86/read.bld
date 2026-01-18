@@ -1,26 +1,15 @@
-# read_file: read(fd, buf, 4096)
-
-# xor rax, rax (sys_read = 0)
 arch/x86/rex/w
 arch/x86/opcode/xor/mr
 arch/x86/modrm/reg/rax/rax
-
-# mov rdi, r13 (fd)
 arch/x86/rex/wb
 arch/x86/opcode/mov/rm
 arch/x86/modrm/reg/rdi/r13
-
-# mov rsi, input buffer
 arch/x86/rex/w
 arch/x86/opcode/mov/ri32
 arch/x86/modrm/ri/rsi
 program/cli/x86/memory/buffer
-
-# mov rdx, page size (4096)
 arch/x86/rex/w
 arch/x86/opcode/mov/ri32
 arch/x86/modrm/ri/rdx
 os/linux/page/imm32
-
-# syscall
 arch/x86/syscall

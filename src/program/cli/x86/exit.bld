@@ -1,16 +1,9 @@
-# exit: exit(0)
-
-# mov rax, sys_exit
 arch/x86/rex/w
 arch/x86/opcode/mov/ri32
 arch/x86/modrm/ri/rax
 os/linux/syscall/exit
 arch/x86/imm32/pad
-
-# xor rdi, rdi (exit code 0)
 arch/x86/rex/w
 arch/x86/opcode/xor/mr
 arch/x86/modrm/reg/rdi/rdi
-
-# syscall
 arch/x86/syscall

@@ -1,4 +1,3 @@
-# mov rax, [rsp]
 arch/x86/rex/w
 arch/x86/opcode/mov/rm
 arch/x86/modrm/mem/rax/sib

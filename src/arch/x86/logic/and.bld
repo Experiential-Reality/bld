@@ -1,4 +1,2 @@
-# x86 implementation of core/logic/and
-# Produces AND instruction when traversed
 core/logic/and
 arch/x86/opcode/and/rm

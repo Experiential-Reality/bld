@@ -1,2 +1,2 @@
-short: 0xEB
-near: 0xE9
+arch/x86/opcode/jmp/short
+arch/x86/opcode/jmp/near

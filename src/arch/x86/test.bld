@@ -1,3 +1,3 @@
-prefix: arch/x86/rex
-opcode: arch/x86/opcode/test
-modrm: arch/x86/modrm
+arch/x86/rex
+arch/x86/opcode/test
+arch/x86/modrm

@@ -1,4 +1,0 @@
-# CLI x86 ELF binary
-format/elf/header/compose
-format/elf/phdr/compose
-program/cli/x86/simple

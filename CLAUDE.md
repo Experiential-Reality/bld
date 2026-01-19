@@ -1,181 +1,199 @@
 # Claude Instructions for BLD
 
-BLD (Boundary/Link/Dimension) decomposes structure. The traverser composes.
+BLD is structural metaprogramming. It IS quantum mechanics. Meaning emerges from structure.
 
-## Core Principle
+## The Math
 
-**Structure IS computation.** We decompose, traverser composes.
+```
+Cost = B + D × L
+```
 
-**The reader IS the traverser.** You reading this are traversing it. An x86 chip executing binary traverses 0..1 space.
-
-| Traverser | What it traverses | Output |
-|-----------|-------------------|--------|
-| Human | .bld text | Understanding |
-| bld-py | .bld structure | Bytes |
-| x86 chip | Binary (0..1) | Computation |
+Use this formula to detect misalignment. If cost doesn't zero out, the structure is wrong.
 
 ## The Three Primitives
 
-| Primitive | Meaning | Question |
-|-----------|---------|----------|
-| **B** (Boundary) | Partition, distinction | What is 0..1 for this? |
-| **L** (Link) | Connection, composition | What connects to what? |
-| **D** (Dimension) | Repetition, positions | What repeats? |
+| Character | Primitive | Question |
+|-----------|-----------|----------|
+| `\|` | B (Boundary) | Where does behavior partition? |
+| `/` | L (Link) | What connects to what? |
+| `\n` | D (Dimension) | What repeats? |
 
-## The Three Concept Characters
+That's the entire language.
 
-| Character | Primitive |
-|-----------|-----------|
-| `\|` | B |
-| `/` | L |
-| `\n` | D |
+## Core Principles
 
-That's the entire language. `/` handles both directions - the traverser determines direction from `to/from` context. `\` is an encoding hack for literal characters.
+### Structure IS Computation
 
-## Repository Structure
+Don't compute structure. Let structure compute. The traverser (bld-py) just follows B/L/D. Bytes fall out.
 
-```
-bld/src/
-├── core/                   # Abstract concepts (WHAT)
-│   ├── mathematics/        # sum, difference, product
-│   └── logic/              # and, or, not
-├── arch/x86/               # x86 implementation (HOW)
-│   ├── mathematics/        # links to core → produces opcodes
-│   ├── logic/              # links to core → produces opcodes
-│   ├── opcode/             # instruction bytes
-│   ├── rex/, modrm/        # encoding components
-│   └── imm32/, imm64/      # immediate padding
-├── os/linux/               # Linux concepts
-│   ├── syscall/            # read, write, open, close, exit
-│   ├── fd/                 # stdin, stdout, stderr
-│   └── page/               # page size, x86 encoding
-├── format/elf/             # ELF binary format
-│   ├── const/              # magic, type, machine, pt, pf
-│   ├── header/, phdr/      # header structures
-│   └── ident/              # ELF identification
-├── lang/english/           # English language concepts
-│   ├── alphabet.bld        # D structure: 26 lines (a-z)
-│   ├── case/               # upper, lower
-│   ├── whitespace/         # space, newline, tab
-│   └── punctuation/        # period, comma
-├── ascii/                  # ASCII encoding (lang → bytes)
-└── program/                # Programs (use core, not arch)
-    └── cli/                # CLI program
-```
+### Composing Filesystem Structures
 
-## Separation of Concerns
+When you compose multiple structures (ascii, arch, os, format, lang), where they **collide** they compose together.
 
 ```
-core/           # WHAT (abstract concepts)
-arch/x86/       # HOW (x86 implementation of core)
-os/linux/       # OS concepts (syscalls, memory)
+ascii.bld:
+ascii/control    # 32 entries (0x00-0x1F)
+ascii/printable  # 95 entries (0x20-0x7E)
+del              # 1 entry (0x7F)
+```
+
+When composing `ascii/printable/H`:
+1. `ascii/printable` comes AFTER `ascii/control` (32 entries)
+2. H is at position 40 in printable
+3. Total: 32 + 40 = 72 = 0x48
+
+The base offset comes from the SIZE of preceding structures. By accurately describing the machine with BLD, computation falls out.
+
+### Values Don't Exist
+
+**.bld files contain CONSTANTS and STRUCTURE only.**
+
+- `0x7F` = hex constant (byte)
+- `0` = NOT a value. It's `b` - position 0, the boundary
+- Decimal numbers are POSITIONS in D structures, not literals
+
+### Position IS Value
+
+In a D structure, the line number IS the value:
+
+```
+os/linux/syscall.bld:
+read      # position 0 = syscall 0
+write     # position 1 = syscall 1
+...
+exit      # position 60 = syscall 60
+```
+
+This IS `unistd_64.h` described with BLD.
+
+### Raw Concepts
+
+A link to a missing file = raw concept. Value comes from position in parent D.
+
+```
+os/linux/syscall/exit  # no file exists
+                       # value = position 60 in os/linux/syscall.bld
+```
+
+### Contiguous D vs Dispatch Table
+
+**Contiguous D** (ordered, no gaps): Just concept names. Position IS value.
+```
+read
+write
+exit
+```
+
+**Dispatch table** (partitioned): `constant|link` format.
+```
+os/linux/syscall/open|program/cli/error/open
+```
+Left = match, Right = dispatch. Used for success|failure partitions.
+
+### Links Provide Context
+
+Inside a structure, links to self are redundant:
+```
+# WRONG - redundant links inside os/linux/syscall.bld
+os/linux/syscall/read
+os/linux/syscall/write
+
+# RIGHT - just concept names
+read
+write
+```
+
+But links ADD meaning when context matters:
+```
+# os/linux/fd.bld - links provide fd context
+os/linux/fd/stdin
+os/linux/fd/stdout
+os/linux/fd/stderr
+```
+
+## BLD Refactoring Methodology
+
+When you discover friction, don't skip it. Fix it. You can't understand the concept until you do.
+
+For each structure, ask:
+
+1. **B**: Where does behavior partition?
+2. **L**: What connects to what?
+3. **D**: What repeats?
+
+Then verify with `Cost = B + D × L`. If misaligned, restructure.
+
+## Writing BLD
+
+### DO
+- Express intent, not implementation
+- Use hex (`0x`) for byte constants
+- Use boundaries (`|`) for success|failure partitions
+- Trust position - line number IS value
+- Let structure compute
+
+### DON'T
+- Use decimal literals as values (they're positions)
+- Put `0` in files (it's `b`, implicit at position 0)
+- Add redundant links inside structures
+- Pre-decompose (put arch details in programs)
+- Change the traverser math
+
+## Structure Hierarchy
+
+```
+core/           # Abstract concepts (WHAT)
+arch/x86/       # Architecture encoding (HOW)
+os/linux/       # OS concepts (syscalls, fds)
 format/elf/     # Binary format
 lang/           # Language concepts
-program/        # Intent (uses core, architecture-agnostic)
+program/        # Intent (uses os/core, NOT arch)
 ```
 
-**Programs use core concepts, NEVER architecture directly.**
+Programs express intent. Architecture provides encoding. The traverser composes.
 
-## Values vs Constants
-
-**VALUES do not exist in BLD. Only CONSTANTS exist.**
-
-A constant is an indivisible unit of meaning. Ask: "What is 0..1 for this?"
-
-| Thing | Constant? | Why |
-|-------|-----------|-----|
-| `0x7F` (ELF magic) | YES | Indivisible: "this is ELF" |
-| `60` (sys_exit) | YES | Indivisible: "exit syscall" |
-| `0x40` (load byte2) | YES | Indivisible: "load address contribution" |
-| `0x400000` (load addr) | NO | It's `32/b` - composition of bytes |
-
-## Computation IS Structure
-
-When you need computation, express it using the target architecture's structure.
+## The Conceptual CLI
 
 ```
-core/mathematics/sum         # abstract concept
-arch/x86/mathematics/sum     # x86 implementation → ADD opcode
+bld <from> <to> <start> <output>
+bld bld.bld os/linux,arch/x86,format/elf program/cli bin/
 ```
 
-Programs use core:
+- **from**: source format (bld.bld)
+- **to**: target formats (os, arch, format)
+- **start**: what to compose (program)
+- **output**: where to write
+
+## Examples
+
+### Syscall (contiguous D)
 ```
-core/mathematics/sum
-  format/elf/header/size
-  format/elf/phdr/size
-  program/cli/code/size
-# Composed through x86 → computed bytes fall out
-```
-
-## Bytes Fall Out
-
-The x86 processor is modeled as structure. Linux is structure. The program is structure.
-When you compose program through x86+linux, bytes emerge.
-
-```
-0                           # constant: zero (page aligned)
-os/linux/page/x86/byte1     # constant: page contribution (0x10)
-os/linux/x86/load/byte2     # constant: load contribution (0x40)
-0                           # constant: zero (high byte)
-# Composed → 0x00 0x10 0x40 0x00 (buffer address)
-```
-
-## Alphabet IS a D Structure
-
-The English alphabet is literally the letters a-z in order as a dimension:
-
-```
-lang/english/alphabet.bld:
-a
-b
-c
-d
+os/linux/syscall.bld:
+read
+write
+open
+close
 ...
-z
+exit
 ```
+Position 60 = exit = syscall 60.
 
-26 lines. The line number IS the position. The ORDER is the structure.
-
-## Char Concept and Case
-
-**The concept is "char".** A char is an abstract letter at a position (1-26).
-
-**Case is a math operation on char:**
-- `uppercase` = char + 64 (0x40)
-- `lowercase` = uppercase + 32
-
-So: `lowercase = char + 64 + 32 = char + 96`
-
+### Boundary (success|failure)
 ```
-char/H          # abstract: position 8 in alphabet
-ascii/upper/H   # = char/H + 64 = 8 + 64 = 72 (0x48)
-ascii/lower/h   # = ascii/upper/H + 32 = 72 + 32 = 104 (0x68)
+program/cli/open.bld:
+os/linux/syscall/open|program/cli/error/open
 ```
+Open syscall OR error handler.
 
-**Position is everything.** The char's position in the alphabet determines its value through math operations. ASCII is just one encoding - char + base.
-
-## Investigation
-
-**The structure IS perfect math.** Concepts exist at their expected paths.
-
-- General concept (letter, sum)? → `core/`
-- x86-specific encoding? → `arch/x86/`
-- Language concept? → `lang/`
-- OS concept? → `os/`
-- Format concept? → `format/`
-
-**Assume concepts exist at expected links.** The hierarchy is mathematical.
-
-## Bootstrap
-
-```bash
-# Python composes BLD → bytes
-cd bld-py && PYTHONPATH=src python -m bld_py compose program/cli ../bld/bin/bld
-
-# Verify
-chmod +x bin/bld && ./bin/bld /tmp/test.txt
+### Program (intent only)
 ```
+program/cli/exit.bld:
+os/linux/syscall/exit
+```
+Just the syscall. No `0` needed - boundary is implicit.
 
 ## Remember
 
 > "The structure you find is the structure that exists. BLD doesn't impose—it reveals."
+
+Trust the math. Meaning emerges from structure.

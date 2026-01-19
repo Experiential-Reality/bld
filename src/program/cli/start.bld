@@ -1,4 +1,2 @@
-os/entry/argc
-2
-program/cli/error/noarg
+os/entry/argc|program/cli/error/noarg
 os/entry/argv/1

@@ -1,9 +1,0 @@
-arch/x86/rex/w
-arch/x86/opcode/mov/ri32
-arch/x86/modrm/ri/rax
-os/linux/syscall/close
-arch/x86/imm32/pad
-arch/x86/rex/wb
-arch/x86/opcode/mov/rm
-arch/x86/modrm/reg/rdi/r13
-arch/x86/syscall

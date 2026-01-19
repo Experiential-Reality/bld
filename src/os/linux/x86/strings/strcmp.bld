@@ -1,4 +1,4 @@
-arch/x86/loop
-arch/x86/xor
-arch/x86/jmp
-arch/x86/mov
+loop
+xor
+jmp
+mov

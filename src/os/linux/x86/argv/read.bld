@@ -1,4 +1,4 @@
-arch/x86/rex
-arch/x86/opcode/mov
-arch/x86/modrm
-arch/x86/sib
+rex
+opcode/mov
+modrm
+sib

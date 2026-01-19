@@ -1,5 +1,0 @@
-from/bld
-to/arch/x86
-to/os/linux
-to/format/elf
-compose

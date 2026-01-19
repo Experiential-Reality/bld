@@ -1,302 +1,197 @@
 # BLD
 
-**Quantum programming.**
+**Structural metaprogramming.** BLD = Lie theory = Quantum mechanics.
 
-```
-BLD = Lie theory = Quantum mechanics code
-```
-
-When you write `.bld`, you are writing in the same structural language that physics uses.
+When you write `.bld`, you describe structure. The traverser computes.
 
 ---
 
 ## The Three Primitives
 
-```bld
-B entry: boundary | link | dimension
-  boundary -> partition, distinction, "this not that"
-  link -> connection, relation, "this affects that"
-  dimension -> repetition, extension, "more of the same"
-```
-
-| Primitive | Meaning | Lie Theory | Quantum Mechanics |
-|-----------|---------|------------|-------------------|
-| **B** | Partition | Group topology | Measurement |
-| **L** | Connection | Structure constants | Entanglement |
-| **D** | Repetition | Generators | Superposition |
-
----
-
-## Examples
-
-### A byte
-
-```bld
-8*b
-```
-
-### An ELF header field
-
-```bld
-ident: format/elf/ident
-type: u16
-machine: u16
-entry: u64
-```
-
-### Quantum mechanics
-
-```bld
-structure QuantumMechanics
-
-# Position: D-type (dimensional location)
-D position: x [coordinate]
-
-# Momentum: L-type (temporal link)
-L momentum: p = m * dx/dt [velocity_link]
-
-# The coupling: structure constant
-L commutator: [x, p] = i * hbar
-
-# Uncertainty follows from D-L irreducibility
-formula uncertainty_principle
-  Delta_x * Delta_p >= hbar / 2
-
-B precision_choice: position_precise | momentum_precise | balanced
-  position_precise -> Delta_x_small, Delta_p_large
-  momentum_precise -> Delta_p_small, Delta_x_large
-  balanced -> Delta_x_medium, Delta_p_medium
-```
-
-### The Standard Model
-
-```bld
-structure StandardModel
-
-# U(1) - Electromagnetism
-D u1_generator: 1 [photon]
-L u1_structure: 0 [abelian]
-B u1_topology: closed
-
-# SU(2) - Weak force
-D su2_generators: 3 [weak_bosons]
-L su2_structure: epsilon_ijk [antisymmetric]
-B su2_topology: closed
-
-# SU(3) - Strong force
-D su3_generators: 8 [gluons]
-L su3_structure: f_ijk [non_abelian]
-B su3_topology: closed [confinement]
-
-L gauge: SU(3) × SU(2) × U(1)
-```
-
----
-
-## The Proof
-
-```
-1. BLD = Lie theory (verified, exact mapping)
-2. Lie theory = QM structure (150 years of physics)
-3. Therefore: BLD = QM language (QED)
-```
-
-Validated predictions:
-- Bell inequality: 2√2 (0.1% error)
-- Fine structure constant: α⁻¹ = 137 (0.03% error)
-- Lepton masses: m_e, m_μ, m_τ (0-1% error)
-- Dark matter fraction: 27% (0% error)
-
-See [BLD Theory](https://github.com/Experiential-Reality/theory) for full documentation.
-
----
-
-## The .bld Format
-
-BLD files use a minimal syntax where structure emerges from simple patterns:
-
-### Dimension — Repetition with `*`
-
-```bld
-# byte.bld - 8 bit positions
-8*b
-
-# u64.bld - 64 bit positions
-64*b
-
-# string.bld - variable length
-N*byte
-```
-
-The pattern `N*type` declares N positions of a type. Size comes from dimension.
-
-### Link — Composition with paths
-
-```bld
-# arch/x86/mov.bld - compose instruction parts
-prefix: arch/x86/rex
-opcode: arch/x86/opcode/mov
-modrm: arch/x86/modrm
-```
-
-Paths like `arch/x86/rex` reference other .bld files. The traverser follows the path and composes the output.
-
-### Boundary — Partition with `|` or `..`
-
-```bld
-# b.bld - the bit (two states)
-0..1
-
-# bld.bld - partition of constructs
-partition: identifier | sequence
-```
-
-Boundaries express distinctions: this OR that. A bit partitions into 0 or 1.
-
-### Fields — Named composition
-
-```bld
-# format/elf/header.bld - ELF64 header structure
-ident: format/elf/ident
-type: u16
-machine: u16
-version: u32
-entry: u64
-phoff: u64
-```
-
-Fields compose types into larger structures. The traverser walks each field in order.
-
-### Constants — Direct output
-
-```bld
-# arch/x86/opcode/mov.bld - x86 MOV opcodes
-ri: 0xB8
-rm: 0x8B
-mr: 0x89
-```
-
-Hex constants (`0x48`) and decimals emit bytes directly. Comments use `#`.
-
-### Sequence — Composition by listing
-
-```bld
-# program/hello.bld - compose a program
-format/elf/minimal
-program/hello/code
-```
-
-Lines listed in sequence compose in order. This produces ELF header followed by code.
-
-### Complete Example
-
-```bld
-# measure.bld - the cost formula
-partitions: N
-positions: M*b
-links: K
-```
-
-This expresses `Cost = B + D × L`:
-- `partitions: N` — count of boundaries
-- `positions: M*b` — M bits of dimension
-- `links: K` — count of connections
-
-The traverser composes by walking the structure. No special emit primitives needed.
-
----
-
-## The Traverser
-
-**The reader IS the traverser.** You reading this are traversing it. An x86 chip executing binary traverses 0..1 space.
-
-| Traverser | Traverses | Output |
-|-----------|-----------|--------|
-| Human | .bld text | Understanding |
-| bld-py | .bld structure | Bytes |
-| x86 chip | Binary (0..1) | Computation |
-
-**BLD is metaprogramming.** It describes how to create anything for a specific well-understood traverser.
-
-### Traverser Pipeline = Existing Structure
-
-The `--to` chain in the CLI references existing directories as traverser stages:
-
-| Stage | Directory | Purpose |
-|-------|-----------|---------|
-| `linux` | `os/linux/` | Entry point, syscalls, args |
-| `x86` | `arch/x86/` | Instruction encoding |
-| `elf` | `format/elf/` | Binary format |
-
-No separate `traverser/` directory needed. It's all natural BLD composition.
-
-**bld IS the pure traverser** — it can traverse any traverser→structure relationship.
-
-### Self-Hosting Flow
-
-```bash
-# Bootstrap (Python traverses BLD → x86)
-python -m bld_py compile --from bld --to linux,x86,elf cli.bld bin/bld
-
-# Self-host (BLD binary traverses BLD → x86)
-bin/bld compile --from bld --to linux,x86,elf cli.bld bin/bld2
-
-# Verify fixpoint
-diff bin/bld bin/bld2
-```
-
----
-
-## Self-Hosted
-
-BLD is fully self-hosted. The compiler, traverser, and all tooling are implemented in BLD itself:
-
-```
-src/bld.bld        — BLD syntax defined in BLD
-src/traverser.bld  — The traverser defined in BLD
-src/compose.bld    — Composition rules in BLD
-```
-
-Use [bld-py](https://github.com/Experiential-Reality/bld-py) to bootstrap. The Python interpreter implements the minimal traversal needed to compile BLD from .bld files, producing a native executable that no longer needs Python.
-
-```bash
-# Bootstrap: Python interprets BLD to produce native BLD
-bld-py src/program/cli.bld > bld
-chmod +x bld
-
-# Now BLD compiles itself
-./bld src/program/cli.bld > bld2
-```
-
----
-
-## Installation
-
-```bash
-git clone https://github.com/Experiential-Reality/bld
-cd bld
-./bld examples/hello.bld
-```
-
----
-
-## The Principle
-
-**Structure IS computation.**
+| Character | Primitive | Question |
+|-----------|-----------|----------|
+| `\|` | B (Boundary) | Where does behavior partition? |
+| `/` | L (Link) | What connects to what? |
+| `\n` | D (Dimension) | What repeats? |
+
+That's the entire language.
 
 ```
 Cost = B + D × L
 ```
 
-We decompose, traverser composes. Lowering IS composition.
+---
+
+## The 5 Structural Rules
+
+### Rule 1: Links Cannot Cross Top-Level Trees
+Links only go DOWN within a single top-level tree. Cross-concept meaning arises through **collision** during composition.
+
+### Rule 2: Top-Level Concepts Require Composition
+Top-level trees are incomplete in isolation. They MUST be composed together. Only BLD primitives (`b.bld`, `d.bld`, `l.bld`, `bld.bld`) stand alone.
+
+### Rule 3: Empty Structures Are Meaningless
+Empty directories and empty files encode nothing. Raw concepts are implied by the link itself - if you link to something, it exists.
+
+### Rule 4: Position IS Value
+Line number in D structure = value. No explicit numbers needed.
+
+### Rule 5: We Write Structure, Not Computation
+The pure traverser IS the machine. Don't change it - change .bld files. **Don't think about bytes - just make structures match the rules. Math, not thinking.**
+
+---
+
+## Top-Level Concepts
+
+```
+os/           # Operating system (linux)
+arch/         # Architecture (x86)
+format/       # Binary format (elf)
+encoding/     # Character encoding (ascii)
+lang/         # Language (english)
+program/      # Programs (intent only)
+```
+
+Programs express INTENT. Machines provide IMPLEMENTATION. Composition through collision produces bytes.
+
+---
+
+## Syntax
+
+### Dimension (D) - Newlines
+
+Each line is a position. Line number = value.
+
+```
+os/linux/syscall.bld:
+read           # position 0 = syscall 0
+write          # position 1 = syscall 1
+open           # position 2 = syscall 2
+...
+exit           # position 60 = syscall 60
+```
+
+### Link (L) - Paths
+
+Links connect within a tree using `/`:
+
+```
+program/hello.bld:
+hello/output
+exit
+```
+
+Raw concepts (no file) get their value from position in parent D.
+
+### Boundary (B) - Partition
+
+The pipe `|` partitions:
+
+```
+open|error/open
+```
+
+Left = match (success), Right = dispatch (failure).
+
+---
+
+## Examples
+
+### Self-Reference: bld.bld
+
+```
+b
+d
+l
+```
+
+BLD IS b, d, l. Three concepts. That's it.
+
+### Simple Program
+
+```
+program/simple.bld:
+header
+phdr
+exit
+```
+
+Raw concepts that collide during composition with `format/elf`, `os/linux`.
+
+### Hello World Message
+
+```
+program/hello/message.bld:
+H
+e
+l
+l
+o
+,
+
+B
+L
+D
+!
+lf
+```
+
+Each character is a raw concept. Collides with `encoding/ascii` during composition.
+
+---
+
+## The Traverser (bld-py)
+
+bld-py IS the machine. It executes .bld files directly.
+
+### Building a Program
+
+```bash
+cd bld-py/src/bld_py
+python compose.py "program/simple" > /tmp/simple
+chmod +x /tmp/simple
+/tmp/simple
+echo $?  # exit code 0
+```
+
+### Composition
+
+When you compose, top-level trees collide:
+
+```bash
+python compose.py "program/simple"
+```
+
+The traverser:
+1. Resolves links to files
+2. Handles dimensions (each line)
+3. Handles boundaries (match left, follow right)
+4. Raw concepts collide with machine descriptions
+
+Bytes fall out.
+
+---
+
+## The Math
+
+```
+Cost = B + D × L
+```
+
+| BLD | Lie Algebra |
+|-----|-------------|
+| D | Generators |
+| L | Structure constants |
+| B | Topology |
+
+The cost formula IS the Lie algebra dimension formula. When you decompose into B/L/D, you find the algebraic structure that was always there.
 
 ---
 
 ## Related
 
-- [bld-py](https://github.com/Experiential-Reality/bld-py) — Python interpreter
-- [bld-claude](https://github.com/Experiential-Reality/bld-claude) — Claude skill
-- [theory](https://github.com/Experiential-Reality/theory) — Full documentation
+- [bld-py](https://github.com/experiential-reality-org/bld-py) - Python traverser (bootstrap)
+- [theory](https://github.com/experiential-reality-org/theory) - Mathematical foundations
 
 ---
 

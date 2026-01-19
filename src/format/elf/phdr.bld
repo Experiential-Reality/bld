@@ -1,11 +1,11 @@
-format/elf/const/pt/load
-arch/x86/imm32/pad
-format/elf/const/pf/rwx
-arch/x86/imm32/pad
+const/pt/load
+pad32
+const/pf/rwx
+pad32
 0
-arch/x86/imm64/pad
-format/elf/const/load/x86_64
-format/elf/const/load/x86_64
+pad64
+const/load/x86_64
+const/load/x86_64
 0xE8
 0
 0
@@ -14,5 +14,5 @@ format/elf/const/load/x86_64
 0
 0
 0
-program/cli/x86/memory/size
-os/linux/page/imm64
+size
+page

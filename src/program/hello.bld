@@ -1,3 +1,2 @@
-format/elf/header
-format/elf/phdr
-program/cli/x86/hello
+hello/output
+exit

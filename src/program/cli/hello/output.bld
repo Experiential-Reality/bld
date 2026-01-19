@@ -1,3 +1,0 @@
-os/linux/fd/stdout
-program/cli/hello/message
-os/linux/syscall/write

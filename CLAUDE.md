@@ -20,27 +20,78 @@ Use this formula to detect misalignment. If cost doesn't zero out, the structure
 
 That's the entire language.
 
+## The 5 Structural Rules
+
+### Rule 1: Links Cannot Cross Top-Level Trees
+Links only go DOWN within a single top-level tree. Cross-concept meaning arises through **collision** during composition.
+
+### Rule 2: Top-Level Concepts Require Composition
+Top-level trees are incomplete in isolation. They MUST be composed together. Only BLD primitives (`b.bld`, `d.bld`, `l.bld`, `bld.bld`) stand alone.
+
+### Rule 3: Empty Structures Are Meaningless
+Empty directories and empty files encode nothing. Raw concepts are implied by the link itself - if you link to something, it exists.
+
+### Rule 4: Position IS Value
+Line number in D structure = value. No explicit numbers needed.
+
+### Rule 5: We Write Structure, Not Computation
+The pure traverser IS the machine. Don't change it - change .bld files. **Don't think about bytes - just make structures match the rules. Math, not thinking.**
+
 ## Core Principles
 
-### Structure IS Computation
+### Machine Descriptions
 
-Don't compute structure. Let structure compute. The traverser (bld-py) just follows B/L/D. Bytes fall out.
+Each top-level directory describes a machine's structure/capabilities:
+
+```
+os/linux/         # Linux machine - syscalls, fds, pages
+arch/x86/         # x86 chip - instructions, registers, encoding
+format/elf/       # ELF format - headers, sections
+lang/english/     # English language - letters, punctuation
+encoding/ascii/   # ASCII encoding - control, printable
+program/          # Programs - intent only
+```
+
+Programs express INTENT. Machines provide IMPLEMENTATION. Composition connects them.
+
+### Collision Model
+
+Links CANNOT cross between top-level concepts. Cross-concept meaning arises ONLY through collision.
+
+```
+# WRONG - cross-tree linking
+program/hello/output.bld:
+os/linux/fd/stdout      # links to different tree!
+
+# RIGHT - concepts within own tree
+program/hello/output.bld:
+stdout                  # raw concept
+message                 # link down
+write                   # raw concept
+```
+
+When composed with `os/linux`:
+- `stdout` COLLIDES with `os/linux/fd/stdout` → position 1
+- `write` COLLIDES with `os/linux/syscall/write` → position 1
+
+Collision produces meaning. Not explicit links.
 
 ### Composing Filesystem Structures
 
-When you compose multiple structures (ascii, arch, os, format, lang), where they **collide** they compose together.
+When you compose multiple structures (encoding, arch, os, format, lang), where they **collide** they compose together.
 
 ```
-ascii.bld:
-ascii/control    # 32 entries (0x00-0x1F)
-ascii/printable  # 95 entries (0x20-0x7E)
-del              # 1 entry (0x7F)
+encoding/ascii.bld:
+control    # 32 entries (0x00-0x1F)
+printable  # 95 entries (0x20-0x7E)
+del        # 1 entry (0x7F)
 ```
 
-When composing `ascii/printable/H`:
-1. `ascii/printable` comes AFTER `ascii/control` (32 entries)
-2. H is at position 40 in printable
-3. Total: 32 + 40 = 72 = 0x48
+When composing with `encoding/ascii`:
+1. `H` in program collides with `H` in `encoding/ascii/printable`
+2. `printable` comes AFTER `control` (32 entries base)
+3. H is at position 40 in printable
+4. Total: 32 + 40 = 72 = 0x48
 
 The base offset comes from the SIZE of preceding structures. By accurately describing the machine with BLD, computation falls out.
 
@@ -52,7 +103,7 @@ The base offset comes from the SIZE of preceding structures. By accurately descr
 - `0` = NOT a value. It's `b` - position 0, the boundary
 - Decimal numbers are POSITIONS in D structures, not literals
 
-### Position IS Value
+### Position IS Value (Rule 4)
 
 In a D structure, the line number IS the value:
 
@@ -86,7 +137,7 @@ exit
 
 **Dispatch table** (partitioned): `constant|link` format.
 ```
-os/linux/syscall/open|program/cli/error/open
+open|error/open
 ```
 Left = match, Right = dispatch. Used for success|failure partitions.
 
@@ -103,12 +154,12 @@ read
 write
 ```
 
-But links ADD meaning when context matters:
+Links go DOWN within a tree. Cross-tree meaning comes from collision:
 ```
-# os/linux/fd.bld - links provide fd context
-os/linux/fd/stdin
-os/linux/fd/stdout
-os/linux/fd/stderr
+# program/hello/output.bld - raw concepts that collide
+stdout
+message
+write
 ```
 
 ## BLD Refactoring Methodology
@@ -141,28 +192,41 @@ Then verify with `Cost = B + D × L`. If misaligned, restructure.
 
 ## Structure Hierarchy
 
+**Machine descriptions (require composition):**
 ```
-core/           # Abstract concepts (WHAT)
-arch/x86/       # Architecture encoding (HOW)
-os/linux/       # OS concepts (syscalls, fds)
-format/elf/     # Binary format
-lang/           # Language concepts
-program/        # Intent (uses os/core, NOT arch)
-```
-
-Programs express intent. Architecture provides encoding. The traverser composes.
-
-## The Conceptual CLI
-
-```
-bld <from> <to> <start> <output>
-bld bld.bld os/linux,arch/x86,format/elf program/cli bin/
+os/           # Operating system (linux)
+arch/         # Architecture (x86)
+format/       # Binary format (elf)
+encoding/     # Character encoding (ascii)
+lang/         # Language (english)
+program/      # Programs (intent only)
 ```
 
-- **from**: source format (bld.bld)
-- **to**: target formats (os, arch, format)
-- **start**: what to compose (program)
-- **output**: where to write
+**Pure BLD definitions (standalone):**
+```
+b.bld         # Boundary: 0|1
+d.bld         # Dimension: d/b
+l.bld         # Link: path
+bld.bld       # Self-reference: b, d, l
+```
+
+Programs express intent. Machines provide encoding. Composition through collision produces bytes.
+
+## The Pure Traverser (bld-py)
+
+bld-py IS the machine. It executes .bld files directly - not compilation, direct execution.
+
+```
+python compose.py "program/simple"
+```
+
+The traverser:
+1. Resolves links to files
+2. Accumulates constants (hex/decimal bytes)
+3. Handles dimensions (each line)
+4. Handles boundaries (match left, follow right)
+
+State doesn't exist until traversed - like quantum mechanics, measurement collapses the structure to bytes.
 
 ## Examples
 
@@ -180,17 +244,16 @@ Position 60 = exit = syscall 60.
 
 ### Boundary (success|failure)
 ```
-program/cli/open.bld:
-os/linux/syscall/open|program/cli/error/open
+open|error/open
 ```
-Open syscall OR error handler.
+Match left (success), dispatch right (failure handler).
 
 ### Program (intent only)
 ```
-program/cli/exit.bld:
-os/linux/syscall/exit
+program/exit.bld:
+exit
 ```
-Just the syscall. No `0` needed - boundary is implicit.
+Just the raw concept. When composed with `os/linux`, `exit` collides with `os/linux/syscall/exit` → position 60.
 
 ## Remember
 

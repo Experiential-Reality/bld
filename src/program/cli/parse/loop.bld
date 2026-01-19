@@ -1,6 +1,0 @@
-ascii/space|parse/skip
-ascii/tab|parse/skip
-ascii/newline|parse/next
-ascii/0|parse/hex
-digit|parse/decimal
-alpha|parse/link

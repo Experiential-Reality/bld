@@ -14,6 +14,23 @@ BLD (Boundary/Link/Dimension) expresses structure. The traverser composes.
 
 You reading this are a traverser.
 
+## The 5 Structural Rules
+
+### Rule 1: Links Cannot Cross Top-Level Trees
+Links only go DOWN within a single top-level tree. Cross-concept meaning arises through **collision** during composition.
+
+### Rule 2: Top-Level Concepts Require Composition
+Top-level trees are incomplete in isolation. They MUST be composed together. Only BLD primitives (`b.bld`, `d.bld`, `l.bld`, `bld.bld`) stand alone.
+
+### Rule 3: Empty Structures Are Meaningless
+Empty directories and empty files encode nothing. Raw concepts are implied by the link itself - if you link to something, it exists.
+
+### Rule 4: Position IS Value
+Line number in D structure = value. No explicit numbers needed.
+
+### Rule 5: We Write Structure, Not Computation
+The pure traverser IS the machine. Don't change it - change .bld files. **Don't think about bytes - just make structures match the rules. Math, not thinking.**
+
 ## Constants Not Values
 
 **.bld files contain CONSTANTS and STRUCTURE only.**
@@ -160,12 +177,12 @@ left|right
 
 ## Links
 
-The slash `/` connects:
+The slash `/` connects within a tree:
 
 ```
-core/mathematics/add
-ascii/H
-8/b
+control/lf        # within encoding/ascii
+syscall/exit      # within os/linux
+hello/message     # within program
 ```
 
 The traverser:
@@ -174,6 +191,51 @@ The traverser:
 3. Returns result
 
 Direction determined by `to/from` context.
+
+### Link Boundaries (Rule 1)
+
+**Links CANNOT cross between top-level concept trees.**
+
+Top-level trees are separate universes:
+- `os/` - operating system concepts
+- `arch/` - architecture concepts
+- `program/` - program concepts
+- `lang/` - language concepts
+- `format/` - format concepts
+- `encoding/` - encoding concepts (ascii, etc.)
+
+```
+# WRONG - cross-tree link
+program/output.bld:
+os/linux/fd/stdout
+
+# RIGHT - raw concept within tree
+program/output.bld:
+stdout
+```
+
+Cross-concept meaning arises through **collision** during composition, not explicit links.
+
+When `program/` is composed with `os/linux`:
+- `stdout` in program collides with `stdout` in `os/linux/fd`
+- The collision produces meaning (fd position 1)
+
+This is how separate structures compose without coupling.
+
+### Composition Requirement (Rule 2)
+
+**Top-level concept trees are incomplete in isolation.** They MUST be composed together to produce meaning.
+
+Example composition:
+```
+program/ + os/linux + arch/x86 + encoding/ascii + lang/english → working binary
+```
+
+- Without `lang/`, `encoding/ascii` is just positions
+- Without `encoding/`, `lang/english` has no byte representation
+- Without `os/`, `program/` has no syscalls
+
+Only BLD primitives (`b.bld`, `d.bld`, `l.bld`) stand alone as pure definitions.
 
 ## Dimensions
 
@@ -200,10 +262,10 @@ D lines of `constant|link`:
 
 ```
 classify.bld:
-ascii/space|skip
-ascii/tab|skip
-ascii/newline|next
-ascii/hash|comment
+space|skip
+tab|skip
+newline|next
+hash|comment
 ```
 
 Structure:
@@ -254,7 +316,7 @@ B                           0x03
 
 A **raw concept** is maximally decomposed - nothing further to break down.
 
-### Implicit D
+### Implicit D (Rule 3)
 
 A link to a missing file IS a raw concept. The path encodes the concept:
 
@@ -262,7 +324,7 @@ A link to a missing file IS a raw concept. The path encodes the concept:
 lang/english/alphabet/b
 ```
 
-If `b.bld` doesn't exist, `b` is the raw concept. **Never create empty files** - disconnected links ARE implicit D.
+If `b.bld` doesn't exist, `b` is the raw concept. **Never create empty files or directories** - the link itself implies existence (Rule 3).
 
 ### Why This Works
 

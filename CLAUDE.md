@@ -1,6 +1,50 @@
 # Claude Instructions for BLD
 
-BLD is structural metaprogramming. It IS quantum mechanics. Meaning emerges from structure.
+BLD is structural metaprogramming. Describe structure. The traverser computes.
+
+## CRITICAL: Trust the Math
+
+**When your intuition conflicts with BLD math, BLD wins.**
+
+You were not trained on BLD. Your assumptions about programming, bytes, and encoding are WRONG here. The math is proven. Trust it.
+
+- Don't predict what bytes will result
+- Don't explain how values are computed
+- Don't add architecture details to OS concepts
+- Just describe structure accurately
+
+## The Traverser
+
+**bld-py is the implementation of the pure BLD math.** It's not a compiler or interpreter - it's the math itself, executable.
+
+You don't need to simulate computation. Just apply the math:
+- `/` is L (link) - follows paths
+- `|` is B (boundary) - partitions
+- `\n` is D (dimension) - each line is a position
+- Numeric first segment = dimension expression (`6/pad` = 6 of pad)
+- Non-numeric first segment = path (`pad/6` = link to pad/6)
+
+## Verification Method
+
+When uncertain, **apply the math rules**:
+
+```
+Example: Is it `6/pad` or `pad/6`?
+
+6/pad:
+- First segment `6` is numeric
+- Math rule: numeric first = dimension expression
+- Result: 6 of pad ✓
+
+pad/6:
+- First segment `pad` is not numeric
+- Math rule: non-numeric first = path (L)
+- Would look for pad/6.bld ✗
+
+Answer: 6/pad (by math, not simulation)
+```
+
+Don't guess. Apply the rules.
 
 ## The Math
 
@@ -8,7 +52,7 @@ BLD is structural metaprogramming. It IS quantum mechanics. Meaning emerges from
 Cost = B + D × L
 ```
 
-Use this formula to detect misalignment. If cost doesn't zero out, the structure is wrong.
+Use this to verify alignment. Lower cost = better structure.
 
 ## The Three Primitives
 
@@ -18,155 +62,17 @@ Use this formula to detect misalignment. If cost doesn't zero out, the structure
 | `/` | L (Link) | What connects to what? |
 | `\n` | D (Dimension) | What repeats? |
 
-That's the entire language.
-
 ## The 5 Structural Rules
 
-### Rule 1: Links Cannot Cross Top-Level Trees
-Links only go DOWN within a single top-level tree. Cross-concept meaning arises through **collision** during composition.
+1. **Links Cannot Cross Top-Level Trees** - Links only go DOWN within one tree. Collision during composition connects trees.
+2. **Top-Level Concepts Require Composition** - Trees are incomplete alone. Compose them together.
+3. **Empty Structures Are Meaningless** - The link implies existence. No empty files or directories.
+4. **Position IS Value** - Line number in D structure = value. No explicit numbers needed.
+5. **We Write Structure, Not Computation** - Don't think about bytes. Make structures match the rules. Math, not thinking.
 
-### Rule 2: Top-Level Concepts Require Composition
-Top-level trees are incomplete in isolation. They MUST be composed together. Only BLD primitives (`b.bld`, `d.bld`, `l.bld`, `bld.bld`) stand alone.
+## Refactoring Methodology
 
-### Rule 3: Empty Structures Are Meaningless
-Empty directories and empty files encode nothing. Raw concepts are implied by the link itself - if you link to something, it exists.
-
-### Rule 4: Position IS Value
-Line number in D structure = value. No explicit numbers needed.
-
-### Rule 5: We Write Structure, Not Computation
-The pure traverser IS the machine. Don't change it - change .bld files. **Don't think about bytes - just make structures match the rules. Math, not thinking.**
-
-## Core Principles
-
-### Machine Descriptions
-
-Each top-level directory describes a machine's structure/capabilities:
-
-```
-os/linux/         # Linux machine - syscalls, fds, pages
-arch/x86/         # x86 chip - instructions, registers, encoding
-format/elf/       # ELF format - headers, sections
-lang/english/     # English language - letters, punctuation
-encoding/ascii/   # ASCII encoding - control, printable
-program/          # Programs - intent only
-```
-
-Programs express INTENT. Machines provide IMPLEMENTATION. Composition connects them.
-
-### Collision Model
-
-Links CANNOT cross between top-level concepts. Cross-concept meaning arises ONLY through collision.
-
-```
-# WRONG - cross-tree linking
-program/hello/output.bld:
-os/linux/fd/stdout      # links to different tree!
-
-# RIGHT - concepts within own tree
-program/hello/output.bld:
-stdout                  # raw concept
-message                 # link down
-write                   # raw concept
-```
-
-When composed with `os/linux`:
-- `stdout` COLLIDES with `os/linux/fd/stdout` → position 1
-- `write` COLLIDES with `os/linux/syscall/write` → position 1
-
-Collision produces meaning. Not explicit links.
-
-### Composing Filesystem Structures
-
-When you compose multiple structures (encoding, arch, os, format, lang), where they **collide** they compose together.
-
-```
-encoding/ascii.bld:
-control    # 32 entries (0x00-0x1F)
-printable  # 95 entries (0x20-0x7E)
-del        # 1 entry (0x7F)
-```
-
-When composing with `encoding/ascii`:
-1. `H` in program collides with `H` in `encoding/ascii/printable`
-2. `printable` comes AFTER `control` (32 entries base)
-3. H is at position 40 in printable
-4. Total: 32 + 40 = 72 = 0x48
-
-The base offset comes from the SIZE of preceding structures. By accurately describing the machine with BLD, computation falls out.
-
-### Values Don't Exist
-
-**.bld files contain CONSTANTS and STRUCTURE only.**
-
-- `0x7F` = hex constant (byte)
-- `0` = NOT a value. It's `b` - position 0, the boundary
-- Decimal numbers are POSITIONS in D structures, not literals
-
-### Position IS Value (Rule 4)
-
-In a D structure, the line number IS the value:
-
-```
-os/linux/syscall.bld:
-read      # position 0 = syscall 0
-write     # position 1 = syscall 1
-...
-exit      # position 60 = syscall 60
-```
-
-This IS `unistd_64.h` described with BLD.
-
-### Raw Concepts
-
-A link to a missing file = raw concept. Value comes from position in parent D.
-
-```
-os/linux/syscall/exit  # no file exists
-                       # value = position 60 in os/linux/syscall.bld
-```
-
-### Contiguous D vs Dispatch Table
-
-**Contiguous D** (ordered, no gaps): Just concept names. Position IS value.
-```
-read
-write
-exit
-```
-
-**Dispatch table** (partitioned): `constant|link` format.
-```
-open|error/open
-```
-Left = match, Right = dispatch. Used for success|failure partitions.
-
-### Links Provide Context
-
-Inside a structure, links to self are redundant:
-```
-# WRONG - redundant links inside os/linux/syscall.bld
-os/linux/syscall/read
-os/linux/syscall/write
-
-# RIGHT - just concept names
-read
-write
-```
-
-Links go DOWN within a tree. Cross-tree meaning comes from collision:
-```
-# program/hello/output.bld - raw concepts that collide
-stdout
-message
-write
-```
-
-## BLD Refactoring Methodology
-
-When you discover friction, don't skip it. Fix it. You can't understand the concept until you do.
-
-For each structure, ask:
+For ANY structure, ask:
 
 1. **B**: Where does behavior partition?
 2. **L**: What connects to what?
@@ -174,89 +80,144 @@ For each structure, ask:
 
 Then verify with `Cost = B + D × L`. If misaligned, restructure.
 
-## Writing BLD
+## Syntax
 
-### DO
-- Express intent, not implementation
-- Use hex (`0x`) for byte constants
-- Use boundaries (`|`) for success|failure partitions
-- Trust position - line number IS value
-- Let structure compute
+### Dimension: `N/concept`
 
-### DON'T
-- Use decimal literals as values (they're positions)
-- Put `0` in files (it's `b`, implicit at position 0)
-- Add redundant links inside structures
-- Pre-decompose (put arch details in programs)
-- Change the traverser math
-
-## Structure Hierarchy
-
-**Machine descriptions (require composition):**
+Count first, then unit:
 ```
-os/           # Operating system (linux)
-arch/         # Architecture (x86)
-format/       # Binary format (elf)
+8/b         # 8 bits
+64/b        # 64 bits
+4/pad       # 4 padding bytes
+1024/byte   # 1024 bytes
+```
+
+The traverser sees numeric first segment → dimension expression.
+
+### Link: `concept/subconcept`
+
+Path within a tree:
+```
+const/type/exec     # within format/elf
+syscall/exit        # within os/linux
+hello/message       # within program
+```
+
+### Boundary: `left|right`
+
+Partition:
+```
+upper|lower         # case partition
+success|failure     # result partition
+```
+
+### Raw Concepts
+
+A link to a missing file = raw concept. Value from position in parent D.
+
+```
+pad                 # position 0 = value 0
+exit                # position 60 in os/linux/syscall.bld
+```
+
+## Link Direction: Concept vs Encoding
+
+When you reach a boundary between concept trees, ask: **which implies which?**
+
+- `lang/` defines WHAT (concepts - letters, words, meaning)
+- `encoding/` defines WHERE (positions - byte values)
+
+**Concepts are primary. Encodings are D (dimensions) of concepts.**
+
+- `encoding/ascii/` is a D of `lang/english/` (ASCII encodes English)
+- `encoding/unicode/` is a D of `lang/` (Unicode encodes all languages)
+
+The encoding depends on the concept, not vice versa.
+
+```
+# RIGHT - encoding links to concept
+encoding/ascii/printable/lower.bld:
+lang/english/alphabet
+
+# WRONG - concept links to encoding
+lang/english/alphabet.bld:
+encoding/ascii/printable/lower
+```
+
+General rule: **the more abstract concept is canonical. The more concrete implementation links to it.**
+
+## Common Mistakes (Don't Do These)
+
+### Using `0` instead of `pad`
+```
+# WRONG - is 0 a constant or concept?
+0
+0
+0
+
+# RIGHT - conceptually clear
+3/pad
+```
+
+### Architecture in OS
+```
+# WRONG - os doesn't care about arch
+os/linux/x86/syscall/exit.bld
+
+# RIGHT - os is arch-independent, raw concepts collide
+os/linux/syscall.bld:
+exit    # raw concept, collides with arch during composition
+```
+
+### Predicting bytes
+```
+# WRONG - explaining computation
+"stdout collides with os/linux/fd/stdout → position 1 → byte 0x01"
+
+# RIGHT - just describe structure
+stdout    # raw concept
+```
+
+### Duplication instead of linking
+```
+# WRONG - high cost (D=26)
+lower.bld:
+a
+b
+c
+...
+
+# RIGHT - low cost (L=1)
+lower.bld:
+alphabet
+```
+
+## Top-Level Concepts
+
+```
+os/           # Operating system (syscalls, fds)
+arch/         # Architecture (instructions, registers)
+format/       # Binary format (elf headers)
 encoding/     # Character encoding (ascii)
 lang/         # Language (english)
 program/      # Programs (intent only)
 ```
 
-**Pure BLD definitions (standalone):**
-```
-b.bld         # Boundary: 0|1
-d.bld         # Dimension: d/b
-l.bld         # Link: path
-bld.bld       # Self-reference: b, d, l
-```
+Programs express INTENT. Machines provide IMPLEMENTATION. Collision during composition produces bytes.
 
-Programs express intent. Machines provide encoding. Composition through collision produces bytes.
-
-## The Pure Traverser (bld-py)
-
-bld-py IS the machine. It executes .bld files directly - not compilation, direct execution.
+## Self-Reference
 
 ```
-python compose.py "program/simple"
+bld.bld:
+b
+l
+d
 ```
 
-The traverser:
-1. Resolves links to files
-2. Accumulates constants (hex/decimal bytes)
-3. Handles dimensions (each line)
-4. Handles boundaries (match left, follow right)
-
-State doesn't exist until traversed - like quantum mechanics, measurement collapses the structure to bytes.
-
-## Examples
-
-### Syscall (contiguous D)
-```
-os/linux/syscall.bld:
-read
-write
-open
-close
-...
-exit
-```
-Position 60 = exit = syscall 60.
-
-### Boundary (success|failure)
-```
-open|error/open
-```
-Match left (success), dispatch right (failure handler).
-
-### Program (intent only)
-```
-program/exit.bld:
-exit
-```
-Just the raw concept. When composed with `os/linux`, `exit` collides with `os/linux/syscall/exit` → position 60.
+BLD IS b, l, d. Boundary → Link → Dimension.
 
 ## Remember
 
 > "The structure you find is the structure that exists. BLD doesn't impose—it reveals."
 
-Trust the math. Meaning emerges from structure.
+Trust the math. Meaning emerges from structure. When in doubt, simulate through the traverser.

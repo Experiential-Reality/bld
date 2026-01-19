@@ -3,11 +3,4 @@ format/elf/const/class64
 format/elf/const/lsb
 format/elf/const/version
 format/elf/const/osabi/none
-0
-0
-0
-0
-0
-0
-0
-0
+8/pad

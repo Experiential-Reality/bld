@@ -24,20 +24,47 @@ Cost = B + D × L
 2. **Top-Level Concepts Require Composition** - Trees are incomplete alone. Compose them together.
 3. **Empty Structures Are Meaningless** - The link implies existence.
 4. **Position IS Value** - Line number = value.
-5. **We Write Structure, Not Computation** - Don't think about bytes. Just make structures match the rules. Math, not thinking.
+5. **We Write Structure, Not Computation** - Don't think about bytes. Make structures match the rules. Math, not thinking.
 
 ---
 
-## Top-Level Concepts
+## Syntax
+
+### Dimension: `N/concept`
+```
+8/b         # 8 bits
+4/pad       # 4 padding bytes
+```
+
+### Link: `concept/subconcept`
+```
+const/type/exec
+hello/message
+```
+
+### Boundary: `left|right`
+```
+upper|lower
+```
+
+### Raw Concepts
+```
+pad         # position 0 = value 0
+exit        # position 60 in syscall.bld
+```
+
+---
+
+## Self-Reference
 
 ```
-os/           # Operating system
-arch/         # Architecture
-format/       # Binary format
-encoding/     # Character encoding
-lang/         # Language
-program/      # Programs
+bld.bld:
+b
+l
+d
 ```
+
+BLD IS b, l, d. Boundary → Link → Dimension.
 
 ---
 
@@ -50,14 +77,6 @@ chmod +x /tmp/simple
 /tmp/simple
 ```
 
-Compose any start file from BLD to a machine:
-
-```
-from: bld
-to: arch/x86, os/linux, format/elf, encoding/ascii, lang/english
-start: program/simple
-```
-
 ---
 
 ## Methodology
@@ -68,7 +87,7 @@ For any structure, ask:
 2. **L**: What connects to what?
 3. **D**: What repeats?
 
-Verify with `Cost = B + D × L`. If misaligned, restructure.
+Verify with `Cost = B + D × L`. Minimize cost.
 
 ---
 

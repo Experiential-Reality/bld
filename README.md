@@ -18,6 +18,21 @@ Cost = B + D × L
 
 ---
 
+## Mathematics
+
+BLD primitives are reversible mathematical operations:
+
+| Primitive | Operation | Structure | Example |
+|-----------|-----------|-----------|---------|
+| `\|` | Sum/Difference | `d\|d` | 5\|5 = 10 |
+| `/` | Product/Quotient | `d/d` | 10/10 = 100 |
+
+The cost formula `B + D × L` uses these operations.
+
+Dimension expressions are multiplication: `N/M` = N × M
+
+---
+
 ## The 5 Structural Rules
 
 1. **Links Cannot Cross Top-Level Trees** - Links only go DOWN within one tree. Collision during composition connects trees.

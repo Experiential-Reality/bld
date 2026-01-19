@@ -65,6 +65,39 @@ Cost = B + D × L
 
 Use this to verify alignment. Lower cost = better structure.
 
+## Mathematics IS BLD
+
+BLD primitives ARE mathematical operations viewed operationally:
+
+| Primitive | Math Operation | Structure |
+|-----------|----------------|-----------|
+| `\|` (B) | Sum/Difference | `d\|d` |
+| `/` (L) | Product/Quotient | `d/d` |
+| `\n` (D) | Positions | Constants to operate on |
+
+Both operations are reversible via reverse traversal (order matters):
+- Forward: 5|5 = 10 (sum), 10/10 = 100 (product)
+- Reverse: 10 → 5 (difference), 100 → 10 (quotient)
+
+Dimension expressions ARE multiplication:
+- `10/10` = 100
+- `2/3` = 6
+- `N/M` where both numeric = N × M
+
+The cost formula `B + D × L` IS BLD math:
+- B = count of boundaries (sums)
+- D × L = dimension times links (product)
+- The formula itself uses sum and product
+
+Numbers are positions in D (constants, not values). BLD math operates on any D structure.
+
+```
+mathematics.bld:
+bld
+```
+
+Mathematics IS bld viewed operationally.
+
 ## The Three Primitives
 
 | Character | Primitive | Question |
@@ -90,6 +123,93 @@ For ANY structure, ask:
 3. **D**: What repeats?
 
 Then verify with `Cost = B + D × L`. If misaligned, restructure.
+
+## Discovery and Alignment Process
+
+**Don't debug by running code. Traverse the structure manually.**
+
+### Step 1: Write Out the Structure
+
+Before editing files, write the complete BLD structure as text:
+
+```
+analyze.bld:
+bld
+encoding/ascii/printable/digit
+structure|cost
+
+analyze/structure.bld:
+bld
+
+analyze/cost.bld:
+formula
+output
+
+analyze/cost/formula.bld:
+b|d/l
+```
+
+### Step 2: Calculate Cost for Each File
+
+For each file, count B, D, L and compute cost:
+
+```
+analyze.bld:
+- D = 3 (lines)
+- B = 1 (one |)
+- L = 3 (slashes in encoding/ascii/printable/digit)
+- Cost = 1 + 3 × 3 = 10
+```
+
+### Step 3: Find Misalignment
+
+Look for:
+- **Duplication**: Same structure linked from multiple places (high cost)
+- **Deep paths**: Many `/` where fewer would work
+- **Missing links**: Raw concepts that should link somewhere
+- **Wrong direction**: Concrete linking to abstract (should be reverse)
+
+### Step 4: Fix and Re-traverse
+
+Fix one issue. Then repeat from Step 1. Don't batch fixes.
+
+```
+# WRONG - duplication
+encoding/ascii/printable/digit → lang/english/numeral
+output/dimension.bld → lang/english/numeral  # DUPLICATE!
+
+# RIGHT - single source
+encoding/ascii/printable/digit → lang/english/numeral
+output/dimension.bld → (removed, inherits from select/dimension.bld)
+```
+
+### Raw Concepts as Placeholders
+
+A raw concept (broken link) is a slot that receives a value during collision:
+
+```
+select/value.bld:
+position    # raw concept - no position.bld exists
+
+# During composition:
+# formula result COLLIDES with position
+# position BECOMES that value
+# value/dimension then selects from D structure
+```
+
+This is how computed values flow through structure.
+
+### Formula as Structure
+
+Mathematical formulas ARE structure:
+
+```
+b|d/l       # B + D × L
+            # | (boundary) = addition
+            # / (link) = multiplication
+```
+
+The formula doesn't compute - it describes HOW values combine during collision.
 
 ## Syntax
 

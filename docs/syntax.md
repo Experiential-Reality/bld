@@ -14,6 +14,28 @@ BLD expresses structure. The traverser computes.
 Cost = B + D × L
 ```
 
+## Mathematics
+
+BLD primitives ARE mathematical operations:
+
+| Primitive | Operation | Structure | Example |
+|-----------|-----------|-----------|---------|
+| `\|` (B) | Sum/Difference | `d\|d` | 5\|5 = 10 |
+| `/` (L) | Product/Quotient | `d/d` | 10/10 = 100 |
+
+Both operations are reversible via reverse traversal (order matters):
+- Forward traversal: 5|5 = 10 (sum), 10/10 = 100 (product)
+- Reverse traversal: 10 → 5 (difference), 100 → 10 (quotient)
+
+Dimension expressions are multiplication:
+```
+N/M = N × M
+10/10 = 100
+2/3 = 6
+```
+
+Numbers are positions in D (constants, not values).
+
 ## The 5 Structural Rules
 
 1. **Links Cannot Cross Top-Level Trees** - Links only go DOWN within one tree. Collision during composition connects trees.

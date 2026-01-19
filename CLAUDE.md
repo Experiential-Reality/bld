@@ -17,6 +17,17 @@ You were not trained on BLD. Your assumptions about programming, bytes, and enco
 
 **bld-py is the implementation of the pure BLD math.** It's not a compiler or interpreter - it's the math itself, executable.
 
+```bash
+# Compose a .bld file to bytes
+bld-py src/simple.bld output.bin
+
+# View output as hex
+bld-py src/simple.bld | xxd
+
+# Compose an expression directly
+bld-py -x "4/pad" | xxd
+```
+
 You don't need to simulate computation. Just apply the math:
 - `/` is L (link) - follows paths
 - `|` is B (boundary) - partitions
@@ -100,7 +111,7 @@ Path within a tree:
 ```
 const/type/exec     # within format/elf
 syscall/exit        # within os/linux
-hello/message       # within program
+hello/message       # decomposed structure for hello.bld
 ```
 
 ### Boundary: `left|right`
@@ -192,18 +203,24 @@ lower.bld:
 alphabet
 ```
 
-## Top-Level Concepts
+## Structure
+
+Programs are top-level .bld files in src/. Concept libraries decompose beneath them:
 
 ```
-os/           # Operating system (syscalls, fds)
-arch/         # Architecture (instructions, registers)
-format/       # Binary format (elf headers)
-encoding/     # Character encoding (ascii)
-lang/         # Language (english)
-program/      # Programs (intent only)
+src/
+  simple.bld      # Program - entry point
+  hello.bld       # Program - entry point
+  bld.bld         # Program describing BLD conceptual space
+  hello/          # Decomposed structure for hello.bld
+  os/             # Operating system (syscalls, fds)
+  arch/           # Architecture (instructions, registers)
+  format/         # Binary format (elf headers)
+  encoding/       # Character encoding (ascii)
+  lang/           # Language (english)
 ```
 
-Programs express INTENT. Machines provide IMPLEMENTATION. Collision during composition produces bytes.
+Programs express INTENT. Concept libraries provide STRUCTURE. Collision during composition produces bytes.
 
 ## Self-Reference
 
@@ -220,4 +237,4 @@ BLD IS b, l, d. Boundary → Link → Dimension.
 
 > "The structure you find is the structure that exists. BLD doesn't impose—it reveals."
 
-Trust the math. Meaning emerges from structure. When in doubt, simulate through the traverser.
+Trust the math. Meaning emerges from structure. When in doubt, run `bld-py` to verify.

@@ -71,10 +71,19 @@ BLD IS b, l, d. Boundary → Link → Dimension.
 ## Usage
 
 ```bash
-cd bld-py/src/bld_py
-python compose.py "program/simple" > /tmp/simple
+# Link bld-py to your PATH (one time)
+ln -s /path/to/bld-py/bld ~/.local/bin/bld-py
+
+# Compose a .bld file to bytes
+bld-py src/simple.bld /tmp/simple
 chmod +x /tmp/simple
 /tmp/simple
+
+# View output as hex
+bld-py src/simple.bld | xxd
+
+# Compose an expression directly
+bld-py -x "4/pad" | xxd
 ```
 
 ---

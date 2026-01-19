@@ -45,7 +45,7 @@ Path within a tree. Links only go DOWN.
 ```
 const/type/exec     # within format/elf
 syscall/exit        # within os/linux
-hello/message       # within program
+hello/message       # decomposed structure for hello.bld
 ```
 
 ## Boundary: `left|right`
@@ -112,18 +112,24 @@ Concept characters must be escaped to express as content:
 | `\/` | L (link) |
 | `\\` | escape itself |
 
-## Top-Level Concepts
+## Structure
+
+Programs are top-level .bld files. Concept libraries decompose beneath them:
 
 ```
-os/           # Operating system (syscalls, fds)
-arch/         # Architecture (instructions, registers)
-format/       # Binary format (elf headers)
-encoding/     # Character encoding (ascii)
-lang/         # Language (english)
-program/      # Programs (intent only)
+src/
+  simple.bld      # Program - entry point
+  hello.bld       # Program - entry point
+  bld.bld         # Program describing BLD conceptual space
+  hello/          # Decomposed structure for hello.bld
+  os/             # Operating system (syscalls, fds)
+  arch/           # Architecture (instructions, registers)
+  format/         # Binary format (elf headers)
+  encoding/       # Character encoding (ascii)
+  lang/           # Language (english)
 ```
 
-These require composition. Only BLD primitives (`b.bld`, `d.bld`, `l.bld`, `bld.bld`) stand alone.
+Concept libraries require composition. Only BLD primitives (`b.bld`, `d.bld`, `l.bld`, `bld.bld`) stand alone.
 
 ## Refactoring Methodology
 

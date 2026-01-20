@@ -2,6 +2,35 @@
 
 **Structural metaprogramming.** Describe structure. The traverser computes.
 
+## The Insight
+
+Line numbers ARE values. Structure IS computation.
+
+```
+syscall.bld:
+read     # line 0 = value 0
+write    # line 1 = value 1
+open     # line 2 = value 2
+...
+exit     # line 60 = value 60
+```
+
+No parsing. No interpretation. Position IS meaning.
+
+## Three Primitives
+
+| Char | Name | Math | Type |
+|------|------|------|------|
+| `\|` | B (Boundary) | Sum | Choice between alternatives |
+| `/` | L (Link) | Product | Connection to other structure |
+| `\n` | D (Dimension) | Position | Constants to operate on |
+
+**These three are mathematically proven irreducible.** No primitive can be expressed using the other two.
+
+```
+Cost = B + D × L
+```
+
 ## How It Works
 
 ```
@@ -9,34 +38,10 @@ Input D  →  Traverser  →  Output D
 (source)                  (bytes)
 ```
 
-BLD files describe structure using three primitives. The traverser walks this structure, accumulates position, and produces bytes.
-
-## The Three Primitives
-
-| Character | Primitive | Forward | Reverse |
-|-----------|-----------|---------|---------|
-| `\|` | B (Boundary) | Sum | Difference |
-| `/` | L (Link) | Product | Quotient |
-| `\n` | D (Dimension) | Position | Position |
-
-```
-Cost = B + D × L
-```
-
-Traversal is bidirectional. Cost is conserved—refactoring makes hidden cost explicit.
-
-## The Process
-
-**Accumulation**: The traverser accumulates position as it walks:
-- Each line (D) increments position
-- Each link (L) multiplies through depth
-- Boundaries (B) sum or select
-
-**Link Resolution**: Links are relative to connected structures and resolve going UP the tree. At `/foo/bar`, a reference to `baz` tries `/foo/bar/baz`, then `/foo/baz`, then `/baz`. This is multidimensional accumulation—position is accumulated across all connected structures.
-
-**Collision**: Links only go down within a tree. Separate trees connect through collision during composition. Raw concepts (e.g., `exit` at position 60) receive values from their position.
-
-**Output**: The accumulated position becomes bytes.
+1. Write structure in `.bld` files
+2. Traverser walks structure
+3. Position accumulates (lines count, links multiply, boundaries sum)
+4. Bytes emerge from accumulated position
 
 ## Quick Start
 
@@ -56,10 +61,10 @@ bld-py -x "4/pad" | xxd
 ## Syntax
 
 ```
-8/b             # Dimension: 8 bits
+8/b             # Dimension: 8 bits (count first, then unit)
 const/type      # Link: path within tree
 left|right      # Boundary: partition
-pad             # Raw concept: value from position
+pad             # Raw concept: value from position in parent D
 ```
 
 ## Self-Reference
@@ -75,6 +80,7 @@ BLD IS b, l, d.
 
 ## Learn More
 
+- [Syntax Reference](docs/syntax.md) - Complete syntax documentation
 - [bld-py](https://github.com/experiential-reality-org/bld-py) - The traverser
 - [theory](https://github.com/experiential-reality-org/theory) - Mathematical foundations
 

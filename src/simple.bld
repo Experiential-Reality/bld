@@ -2,6 +2,6 @@ bld
 format/elf
 os/linux
 arch/x86
-encoding/ascii
+encoding/byte/ascii
 lang/english
 exit

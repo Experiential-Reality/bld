@@ -1,0 +1,8 @@
+bld
+format/elf
+os/linux
+arch/x86
+encoding/byte/ascii
+lang/english
+5|5
+exit

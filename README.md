@@ -2,73 +2,65 @@
 
 **Structural metaprogramming.** Describe structure. The traverser computes.
 
----
+## How It Works
+
+```
+Input D  →  Traverser  →  Output D
+(source)                  (bytes)
+```
+
+BLD files describe structure using three primitives. The traverser walks this structure, accumulates position, and produces bytes.
 
 ## The Three Primitives
 
-| Character | Primitive | Question |
-|-----------|-----------|----------|
-| `\|` | B (Boundary) | Where does behavior partition? |
-| `/` | L (Link) | What connects to what? |
-| `\n` | D (Dimension) | What repeats? |
+| Character | Primitive | Forward | Reverse |
+|-----------|-----------|---------|---------|
+| `\|` | B (Boundary) | Sum | Difference |
+| `/` | L (Link) | Product | Quotient |
+| `\n` | D (Dimension) | Position | Position |
 
 ```
 Cost = B + D × L
 ```
 
----
+Traversal is bidirectional. Cost is conserved—refactoring makes hidden cost explicit.
 
-## Mathematics
+## The Process
 
-BLD primitives are reversible mathematical operations:
+**Accumulation**: The traverser accumulates position as it walks:
+- Each line (D) increments position
+- Each link (L) multiplies through depth
+- Boundaries (B) sum or select
 
-| Primitive | Operation | Structure | Example |
-|-----------|-----------|-----------|---------|
-| `\|` | Sum/Difference | `d\|d` | 5\|5 = 10 |
-| `/` | Product/Quotient | `d/d` | 10/10 = 100 |
+**Link Resolution**: Links are relative to connected structures and resolve going UP the tree. At `/foo/bar`, a reference to `baz` tries `/foo/bar/baz`, then `/foo/baz`, then `/baz`. This is multidimensional accumulation—position is accumulated across all connected structures.
 
-The cost formula `B + D × L` uses these operations.
+**Collision**: Links only go down within a tree. Separate trees connect through collision during composition. Raw concepts (e.g., `exit` at position 60) receive values from their position.
 
-Dimension expressions are multiplication: `N/M` = N × M
+**Output**: The accumulated position becomes bytes.
 
----
+## Quick Start
 
-## The 5 Structural Rules
+```bash
+# Compose a .bld file to bytes
+bld-py src/simple.bld output.bin
+chmod +x output.bin
+./output.bin
 
-1. **Links Cannot Cross Top-Level Trees** - Links only go DOWN within one tree. Collision during composition connects trees.
-2. **Top-Level Concepts Require Composition** - Trees are incomplete alone. Compose them together.
-3. **Empty Structures Are Meaningless** - The link implies existence.
-4. **Position IS Value** - Line number = value.
-5. **We Write Structure, Not Computation** - Don't think about bytes. Make structures match the rules. Math, not thinking.
+# View output as hex
+bld-py src/simple.bld | xxd
 
----
+# Compose an expression directly
+bld-py -x "4/pad" | xxd
+```
 
 ## Syntax
 
-### Dimension: `N/concept`
 ```
-8/b         # 8 bits
-4/pad       # 4 padding bytes
+8/b             # Dimension: 8 bits
+const/type      # Link: path within tree
+left|right      # Boundary: partition
+pad             # Raw concept: value from position
 ```
-
-### Link: `concept/subconcept`
-```
-const/type/exec
-hello/message
-```
-
-### Boundary: `left|right`
-```
-upper|lower
-```
-
-### Raw Concepts
-```
-pad         # position 0 = value 0
-exit        # position 60 in syscall.bld
-```
-
----
 
 ## Self-Reference
 
@@ -79,48 +71,12 @@ l
 d
 ```
 
-BLD IS b, l, d. Boundary → Link → Dimension.
+BLD IS b, l, d.
 
----
+## Learn More
 
-## Usage
-
-```bash
-# Link bld-py to your PATH (one time)
-ln -s /path/to/bld-py/bld ~/.local/bin/bld-py
-
-# Compose a .bld file to bytes
-bld-py src/simple.bld /tmp/simple
-chmod +x /tmp/simple
-/tmp/simple
-
-# View output as hex
-bld-py src/simple.bld | xxd
-
-# Compose an expression directly
-bld-py -x "4/pad" | xxd
-```
-
----
-
-## Methodology
-
-For any structure, ask:
-
-1. **B**: Where does behavior partition?
-2. **L**: What connects to what?
-3. **D**: What repeats?
-
-Verify with `Cost = B + D × L`. Minimize cost.
-
----
-
-## Related
-
-- [bld-py](https://github.com/experiential-reality-org/bld-py) - Python traverser
+- [bld-py](https://github.com/experiential-reality-org/bld-py) - The traverser
 - [theory](https://github.com/experiential-reality-org/theory) - Mathematical foundations
-
----
 
 ## License
 

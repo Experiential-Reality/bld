@@ -2,359 +2,283 @@
 
 BLD is structural metaprogramming. Describe structure. The traverser computes.
 
-## CRITICAL: Trust the Math
+## The Traverser IS a Process
 
-**When your intuition conflicts with BLD math, BLD wins.**
+```
+Input D  →  Traverser  →  Output D
+(source)                  (bytes)
+```
 
-You were not trained on BLD. Your assumptions about programming, bytes, and encoding are WRONG here. The math is proven. Trust it.
+The traverser transforms one dimension structure into another. It reads BLD source (positions in files), follows structure, and produces bytes (positions in output).
 
-- Don't predict what bytes will result
-- Don't explain how values are computed
-- Don't add architecture details to OS concepts
-- Just describe structure accurately
-
-## The Traverser
-
-**bld-py is the implementation of the pure BLD math.** It's not a compiler or interpreter - it's the math itself, executable.
+**bld-py** is the traverser. It IS the math, executable.
 
 ```bash
-# Compose a .bld file to bytes
-bld-py src/simple.bld output.bin
-
-# View output as hex
-bld-py src/simple.bld | xxd
-
-# Compose an expression directly
-bld-py -x "4/pad" | xxd
+bld-py src/simple.bld output.bin   # Compose to bytes
+bld-py src/simple.bld | xxd        # View as hex
+bld-py -x "4/pad" | xxd            # Expression directly
 ```
 
-You don't need to simulate computation. Just apply the math:
-- `/` is L (link) - follows paths
-- `|` is B (boundary) - partitions
-- `\n` is D (dimension) - each line is a position
-- Numeric first segment = dimension expression (`6/pad` = 6 of pad)
-- Non-numeric first segment = path (`pad/6` = link to pad/6)
+## The Three Primitives
 
-## Verification Method
+| Character | Primitive | Forward | Reverse |
+|-----------|-----------|---------|---------|
+| `\|` | B (Boundary) | Sum | Difference |
+| `/` | L (Link) | Product | Quotient |
+| `\n` | D (Dimension) | Position | Position |
 
-When uncertain, **apply the math rules**:
+**Traversal is bidirectional.** Forward traversal composes (sum, product). Reverse traversal decomposes (difference, quotient). This enables both encoding and decoding from the same structure.
 
 ```
-Example: Is it `6/pad` or `pad/6`?
-
-6/pad:
-- First segment `6` is numeric
-- Math rule: numeric first = dimension expression
-- Result: 6 of pad ✓
-
-pad/6:
-- First segment `pad` is not numeric
-- Math rule: non-numeric first = path (L)
-- Would look for pad/6.bld ✗
-
-Answer: 6/pad (by math, not simulation)
+Forward: 5|5 = 10 (sum),    10/10 = 100 (product)
+Reverse: 10 → 5 (difference), 100 → 10 (quotient)
 ```
 
-Don't guess. Apply the rules.
+## Why These Three
 
-## The Math
+B, L, D are **proven irreducible** from type theory:
+
+| Primitive | Type | Property |
+|-----------|------|----------|
+| B | Sum type | Choice between alternatives |
+| L | Function type | Reference/indirection |
+| D | Product type | Tuple/repetition |
+
+None can be expressed using the other two. This isn't design—it's mathematics.
+
+**Refactoring IS factorization:**
+```
+FACTOR : S → S₁ × S₂ × ... × Sₙ
+```
+
+Refactoring decomposes composite structures into B, L, D. It terminates at these primitives because they cannot be decomposed further. The three refactoring patterns (extract dispatch table, break cycles, separate loops) are the same insight: find hidden B, L, or D and make it explicit.
 
 ```
 Cost = B + D × L
 ```
 
-Use this to verify alignment. Lower cost = better structure.
+## Cost Conservation
 
-## Mathematics IS BLD
-
-BLD primitives ARE mathematical operations viewed operationally:
-
-| Primitive | Math Operation | Structure |
-|-----------|----------------|-----------|
-| `\|` (B) | Sum/Difference | `d\|d` |
-| `/` (L) | Product/Quotient | `d/d` |
-| `\n` (D) | Positions | Constants to operate on |
-
-Both operations are reversible via reverse traversal (order matters):
-- Forward: 5|5 = 10 (sum), 10/10 = 100 (product)
-- Reverse: 10 → 5 (difference), 100 → 10 (quotient)
-
-Dimension expressions ARE multiplication:
-- `10/10` = 100
-- `2/3` = 6
-- `N/M` where both numeric = N × M
-
-The cost formula `B + D × L` IS BLD math:
-- B = count of boundaries (sums)
-- D × L = dimension times links (product)
-- The formula itself uses sum and product
-
-Numbers are positions in D (constants, not values). BLD math operates on any D structure.
+Cost is **conserved**, not reduced:
 
 ```
-mathematics.bld:
-bld
+C_total = C_visible + C_hidden   (always conserved)
 ```
 
-Mathematics IS bld viewed operationally.
+Refactoring doesn't make structure simpler—it makes **hidden cost explicit**. The goal is explicitness, not minimization.
 
-## The Three Primitives
+| Before Refactoring | After Refactoring |
+|-------------------|-------------------|
+| C_visible: small | C_visible: large |
+| C_hidden: large | C_hidden: small |
+| C_total: **same** | C_total: **same** |
 
-| Character | Primitive | Question |
-|-----------|-----------|----------|
-| `\|` | B (Boundary) | Where does behavior partition? |
-| `/` | L (Link) | What connects to what? |
-| `\n` | D (Dimension) | What repeats? |
+When you refactor, you're revealing structure that was always there. The cost was being paid implicitly. Now it's auditable.
+
+## The Compensation Principle
+
+**B and L are asymmetric.** The cost formula `B + D × L` reveals this:
+- **B is topological** - local, invariant under scaling
+- **L is geometric** - scales with distance (multiplied by D)
+
+This creates an asymmetry:
+
+| Direction | Works? | Why |
+|-----------|--------|-----|
+| L → B | ✓ Yes | Cascading links can approximate boundaries |
+| B → L | ✗ No | Boundaries stay local, can't reach distant information |
+
+**Links can compensate for missing boundaries** (through cascading). **Boundaries can never compensate for missing links.** This affects design: when in doubt, add links. You can always partition later.
+
+## Accumulation
+
+The traverser **accumulates position** as it walks structure:
+
+**D (newlines)**: Each line increments position
+```
+syscall.bld:
+read        # position 0
+write       # position 1
+exit        # position 60
+```
+
+**L (links)**: Following a link multiplies through depth
+```
+10/10 = 100    # dimension expression
+N/M = N × M    # numeric first = multiply
+```
+
+**B (boundaries)**: Partitions sum or select
+```
+5|5 = 10       # sum (forward)
+left|right     # select side based on accumulated value
+```
+
+**Accumulation is multidimensional.** Each connected structure is a dimension. As the traverser follows links, it accumulates relative position in each structure. The output emerges from combining positions across all connected dimensions.
+
+## Link Resolution
+
+**Links are relative to connected structures. Resolution goes UP.**
+
+When the traverser encounters a link, it resolves from the current location upward:
+
+```
+At /foo/bar, reference `baz`:
+  1. Try /foo/bar/baz   ← start local
+  2. Try /foo/baz       ← go up
+  3. Try /baz           ← root level
+```
+
+The level where the link **resolves** is where **collision** happens. That structural position determines meaning.
+
+```
+In format/elf/:   `pad` resolves to format/elf/pad.bld   → 0 (null)
+In arch/x86/:     `pad` resolves to arch/x86/pad.bld    → 144 (NOP)
+At root level:    `pad` resolves to src/pad.bld         → 0 (default)
+```
+
+Same concept, different resolution point, different value. **The structure determines meaning.**
+
+**This is multidimensional accumulation.** As the traverser follows links across connected structures, it accumulates position in each:
+
+```
+format/elf/header.bld     → position in format tree
+  → links to arch/x86/... → position in arch tree
+  → links to os/linux/... → position in os tree
+```
+
+Each connected structure is a dimension. The traverser accumulates relative structural position across all of them. The final value emerges from the combination of positions in all connected structures.
+
+## Collision
+
+**Links only go DOWN within one tree.** This constraint creates the need for collision—which IS composition.
+
+**Collision is the fundamental operation that connects trees.**
+
+```
+os/linux/syscall.bld:    arch/x86/instruction.bld:
+exit    # position 60    (composes with os/linux)
+```
+
+When the traverser composes these:
+1. `exit` is a raw concept (no exit.bld exists)
+2. Its position (60) becomes its value
+3. This value **collides** with arch/x86 during composition
+4. The instruction encodes 60
+
+**Raw concepts receive values from their position.** Collision connects trees.
+
+## Position Enables Computation
+
+Position + collision = general computation:
+
+| Primitive | Provides | Enables |
+|-----------|----------|---------|
+| D | Constants | Values to compute with |
+| L | Indirection | Navigation, composition |
+| B | Choice | Selection, branching |
+
+This is complete. Any computation can be expressed as:
+- Values (D positions)
+- Composed (L links)
+- Selected (B boundaries)
 
 ## The 5 Structural Rules
 
-1. **Links Cannot Cross Top-Level Trees** - Links only go DOWN within one tree. Collision during composition connects trees.
-2. **Top-Level Concepts Require Composition** - Trees are incomplete alone. Compose them together.
-3. **Empty Structures Are Meaningless** - The link implies existence. No empty files or directories.
-4. **Position IS Value** - Line number in D structure = value. No explicit numbers needed.
-5. **We Write Structure, Not Computation** - Don't think about bytes. Make structures match the rules. Math, not thinking.
-
-## Refactoring Methodology
-
-For ANY structure, ask:
-
-1. **B**: Where does behavior partition?
-2. **L**: What connects to what?
-3. **D**: What repeats?
-
-Then verify with `Cost = B + D × L`. If misaligned, restructure.
-
-## Discovery and Alignment Process
-
-**Don't debug by running code. Traverse the structure manually.**
-
-### Step 1: Write Out the Structure
-
-Before editing files, write the complete BLD structure as text:
-
-```
-analyze.bld:
-bld
-encoding/ascii/printable/digit
-structure|cost
-
-analyze/structure.bld:
-bld
-
-analyze/cost.bld:
-formula
-output
-
-analyze/cost/formula.bld:
-b|d/l
-```
-
-### Step 2: Calculate Cost for Each File
-
-For each file, count B, D, L and compute cost:
-
-```
-analyze.bld:
-- D = 3 (lines)
-- B = 1 (one |)
-- L = 3 (slashes in encoding/ascii/printable/digit)
-- Cost = 1 + 3 × 3 = 10
-```
-
-### Step 3: Find Misalignment
-
-Look for:
-- **Duplication**: Same structure linked from multiple places (high cost)
-- **Deep paths**: Many `/` where fewer would work
-- **Missing links**: Raw concepts that should link somewhere
-- **Wrong direction**: Concrete linking to abstract (should be reverse)
-
-### Step 4: Fix and Re-traverse
-
-Fix one issue. Then repeat from Step 1. Don't batch fixes.
-
-```
-# WRONG - duplication
-encoding/ascii/printable/digit → lang/english/numeral
-output/dimension.bld → lang/english/numeral  # DUPLICATE!
-
-# RIGHT - single source
-encoding/ascii/printable/digit → lang/english/numeral
-output/dimension.bld → (removed, inherits from select/dimension.bld)
-```
-
-### Raw Concepts as Placeholders
-
-A raw concept (broken link) is a slot that receives a value during collision:
-
-```
-select/value.bld:
-position    # raw concept - no position.bld exists
-
-# During composition:
-# formula result COLLIDES with position
-# position BECOMES that value
-# value/dimension then selects from D structure
-```
-
-This is how computed values flow through structure.
-
-### Formula as Structure
-
-Mathematical formulas ARE structure:
-
-```
-b|d/l       # B + D × L
-            # | (boundary) = addition
-            # / (link) = multiplication
-```
-
-The formula doesn't compute - it describes HOW values combine during collision.
+1. **Links Cannot Cross Top-Level Trees** - Collision connects trees
+2. **Top-Level Concepts Require Composition** - Trees are incomplete alone
+3. **Empty Structures Are Meaningless** - The link implies existence
+4. **Position IS Value** - Line number = value (this is accumulation)
+5. **We Write Structure, Not Computation** - Traverser computes, we describe
 
 ## Syntax
 
-### Dimension: `N/concept`
-
-Count first, then unit:
+**Dimension**: `N/concept` (count first, then unit)
 ```
 8/b         # 8 bits
-64/b        # 64 bits
 4/pad       # 4 padding bytes
-1024/byte   # 1024 bytes
 ```
 
-The traverser sees numeric first segment → dimension expression.
-
-### Link: `concept/subconcept`
-
-Path within a tree:
+**Link**: `concept/subconcept` (path within tree)
 ```
-const/type/exec     # within format/elf
-syscall/exit        # within os/linux
-hello/message       # decomposed structure for hello.bld
+const/type/exec
+syscall/exit
 ```
 
-### Boundary: `left|right`
-
-Partition:
+**Boundary**: `left|right` (partition)
 ```
-upper|lower         # case partition
-success|failure     # result partition
+upper|lower
+success|failure
 ```
 
-### Raw Concepts
+**Raw Concept**: link to missing file, value from position in parent D
 
-A link to a missing file = raw concept. Value from position in parent D.
+## File Placement
 
+1. **Search** - Does concept exist? `glob src/**/concept.bld`
+2. **Think** - What IS this concept? (os? arch? format? encoding? lang?)
+3. **Walk** - Start at src/, descend into concept trees
+4. **Collide** - Find lowest level where multiple trees need it
+5. **Create** - That's where it belongs
+
+Shared concepts have contextual values:
 ```
-pad                 # position 0 = value 0
-exit                # position 60 in os/linux/syscall.bld
-```
-
-## Link Direction: Concept vs Encoding
-
-When you reach a boundary between concept trees, ask: **which implies which?**
-
-- `lang/` defines WHAT (concepts - letters, words, meaning)
-- `encoding/` defines WHERE (positions - byte values)
-
-**Concepts are primary. Encodings are D (dimensions) of concepts.**
-
-- `encoding/ascii/` is a D of `lang/english/` (ASCII encodes English)
-- `encoding/unicode/` is a D of `lang/` (Unicode encodes all languages)
-
-The encoding depends on the concept, not vice versa.
-
-```
-# RIGHT - encoding links to concept
-encoding/ascii/printable/lower.bld:
-lang/english/alphabet
-
-# WRONG - concept links to encoding
-lang/english/alphabet.bld:
-encoding/ascii/printable/lower
+format/elf/pad.bld → 0 (null byte)
+arch/x86/pad.bld   → 144 (NOP)
 ```
 
-General rule: **the more abstract concept is canonical. The more concrete implementation links to it.**
+Same concept, different meaning per domain.
 
-## Common Mistakes (Don't Do These)
+## Common Mistakes
 
-### Using `0` instead of `pad`
+**Using `0` instead of `pad`**
 ```
-# WRONG - is 0 a constant or concept?
+# WRONG          # RIGHT
+0                3/pad
 0
 0
-0
-
-# RIGHT - conceptually clear
-3/pad
 ```
 
-### Architecture in OS
+**Architecture in OS**
 ```
 # WRONG - os doesn't care about arch
 os/linux/x86/syscall/exit.bld
 
-# RIGHT - os is arch-independent, raw concepts collide
+# RIGHT - raw concept collides with arch
 os/linux/syscall.bld:
-exit    # raw concept, collides with arch during composition
+exit
 ```
 
-### Predicting bytes
-```
-# WRONG - explaining computation
-"stdout collides with os/linux/fd/stdout → position 1 → byte 0x01"
+**Predicting bytes** - Just describe structure. Traverser computes.
 
-# RIGHT - just describe structure
-stdout    # raw concept
+**Duplication instead of linking**
 ```
-
-### Duplication instead of linking
-```
-# WRONG - high cost (D=26)
-lower.bld:
-a
+# WRONG (D=26)   # RIGHT (L=1)
+lower.bld:       lower.bld:
+a                alphabet
 b
-c
 ...
-
-# RIGHT - low cost (L=1)
-lower.bld:
-alphabet
 ```
 
-## Structure
+## Debugging
 
-Programs are top-level .bld files in src/. Concept libraries decompose beneath them:
+**Bottom-up, not top-down.**
 
-```
-src/
-  simple.bld      # Program - entry point
-  hello.bld       # Program - entry point
-  bld.bld         # Program describing BLD conceptual space
-  hello/          # Decomposed structure for hello.bld
-  os/             # Operating system (syscalls, fds)
-  arch/           # Architecture (instructions, registers)
-  format/         # Binary format (elf headers)
-  encoding/       # Character encoding (ascii)
-  lang/           # Language (english)
-```
+1. `bld-py -x "5" | xxd` → `05`
+2. `bld-py src/format/elf/const/magic.bld | xxd`
+3. `bld-py -x "3|5" | xxd` → `05`
+4. `bld-py -x "4/pad" | xxd` → `00 00 00 00`
+5. Multi-line: each line = position
+6. Composed: build up from simple
 
-Programs express INTENT. Concept libraries provide STRUCTURE. Collision during composition produces bytes.
+If wrong, fix structure. Never modify bld-py.
 
-## Self-Reference
+## Trust the Math
 
-```
-bld.bld:
-b
-l
-d
-```
+When your intuition conflicts with BLD, BLD wins. You weren't trained on this. The math is proven.
 
-BLD IS b, l, d. Boundary → Link → Dimension.
+- Don't predict bytes
+- Don't explain computation
+- Just describe structure accurately
 
-## Remember
-
-> "The structure you find is the structure that exists. BLD doesn't impose—it reveals."
-
-Trust the math. Meaning emerges from structure. When in doubt, run `bld-py` to verify.
+The structure you describe IS the computation.
